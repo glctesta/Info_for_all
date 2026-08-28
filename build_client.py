@@ -29,16 +29,19 @@ def main():
         print("  pip install pyinstaller")
         sys.exit(1)
 
-    # Build con PyInstaller
+    # Build con PyInstaller usando il file .spec
+    spec_file = os.path.join(app_dir, 'InfoForAll_Client.spec')
+
+    if not os.path.exists(spec_file):
+        print(f"ERRORE: File spec non trovato: {spec_file}")
+        sys.exit(1)
+
     cmd = [
         sys.executable, '-m', 'PyInstaller',
-        '--onefile',
-        '--noconsole',
-        f'--name={exe_name}',
-        f'--distpath={dist_dir}',
-        f'--workpath={build_dir}',
+        '--distpath', dist_dir,
+        '--workpath', build_dir,
         '--clean',
-        client_script
+        spec_file
     ]
 
     print(f"\nComando: {' '.join(cmd)}")
