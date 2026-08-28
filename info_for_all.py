@@ -173,7 +173,7 @@ def main():
     config = load_config()
     server_config = config.get("server", {})
     host = server_config.get("host", "127.0.0.1")
-    port = server_config.get("port", 5000)
+    port = server_config.get("port", 5100)
     
     start_flask_server(host, port)
     
