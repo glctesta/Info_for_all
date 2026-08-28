@@ -11,6 +11,8 @@ let breakCheckTimer = null;
 let isBreakActive = false;
 let currentPhase = null;
 let breakAudio = null;
+let shiftMusicStarted = false;
+let shiftMusicTimer = null;
 let clockInterval = null;
 let analogClockInterval = null;
 
@@ -331,6 +333,12 @@ function activateBreak(data) {
 function deactivateBreak() {
     isBreakActive = false;
     currentPhase = null;
+    shiftMusicStarted = false;
+
+    if (shiftMusicTimer) {
+        clearTimeout(shiftMusicTimer);
+        shiftMusicTimer = null;
+    }
 
     stopAnalogClock();
     stopBreakSound();
@@ -355,6 +363,14 @@ function updateBreakPhase(data) {
         // Aggiorna solo il countdown
         if (data.phase === 'pre_start' || data.phase === 'pre_end') {
             updateClockCountdown(data.countdown);
+        } else if (data.phase === 'shift_pre') {
+            updateClockCountdown(data.countdown);
+            // Avvia musica quando mancano N secondi (shift_music_advance)
+            const musicAdv = data.shift_music_advance || 15;
+            if (data.countdown <= musicAdv && !shiftMusicStarted && data.break.has_sound) {
+                shiftMusicStarted = true;
+                playShiftChangeSound(data.break.id, (data.shift_music_duration || 60) * 1000);
+            }
         }
     }
 }
@@ -371,6 +387,7 @@ function showPhase(data) {
     hideAllPhases();
 
     switch (data.phase) {
+        // ── Pause normali (5 fasi) ──
         case 'pre_start':
             showPhasePreStart(data.countdown);
             break;
@@ -385,6 +402,14 @@ function showPhase(data) {
             break;
         case 'announce_end':
             showPhaseAnnounce(brk, 'fine');
+            break;
+
+        // ── Cambio turno (2 fasi) ──
+        case 'shift_pre':
+            showPhaseShiftPre(data);
+            break;
+        case 'shift_announce':
+            showPhaseShiftAnnounce(data);
             break;
     }
 }
@@ -484,6 +509,71 @@ function showPhaseDocument(brk) {
     }
 }
 
+// --- Cambio Turno: FASE shift_pre (orologio + countdown 5min + musica a -15s) ---
+function showPhaseShiftPre(data) {
+    const panel = document.getElementById('phase-clock');
+    panel.classList.remove('hidden');
+
+    document.getElementById('phase-clock-label').textContent = 'Cambio turno tra...';
+    updateClockCountdown(data.countdown);
+    startAnalogClock();
+
+    // Avvia musica se mancano <= shift_music_advance secondi
+    const musicAdv = data.shift_music_advance || 15;
+    if (data.countdown <= musicAdv && !shiftMusicStarted && data.break.has_sound) {
+        shiftMusicStarted = true;
+        playShiftChangeSound(data.break.id, (data.shift_music_duration || 60) * 1000);
+    }
+}
+
+// --- Cambio Turno: FASE shift_announce (reparti + musica continua) ---
+function showPhaseShiftAnnounce(data) {
+    stopAnalogClock();
+    const brk = data.break;
+    const panel = document.getElementById('phase-announce');
+    panel.classList.remove('hidden');
+
+    // Tipo
+    document.getElementById('announce-type').textContent =
+        config.breaks?.shift_change_label || '🔄 Cambio Turno';
+
+    // Orario
+    document.getElementById('announce-time-range').textContent =
+        'Ore ' + brk.from_time;
+
+    // Reparti
+    const deptContainer = document.getElementById('announce-departments');
+    deptContainer.innerHTML = '';
+    if (brk.departments && brk.departments.length > 0) {
+        brk.departments.forEach(dept => {
+            const card = document.createElement('div');
+            card.className = 'dept-card';
+            let html = '';
+            if (dept.id_cdc !== null && dept.id_cdc !== undefined) {
+                html += '<div class="dept-label">Reparto</div>';
+                html += '<div class="dept-value">' + escapeHtml(String(dept.id_cdc)) + '</div>';
+            }
+            if (dept.id_sub_cdc !== null && dept.id_sub_cdc !== undefined) {
+                html += '<div class="dept-label">Sotto-Reparto</div>';
+                html += '<div class="dept-value">' + escapeHtml(String(dept.id_sub_cdc)) + '</div>';
+            }
+            if (dept.function_id !== null && dept.function_id !== undefined) {
+                html += '<div class="dept-label">Funzione</div>';
+                html += '<div class="dept-value">' + escapeHtml(String(dept.function_id)) + '</div>';
+            }
+            card.innerHTML = html;
+            deptContainer.appendChild(card);
+        });
+    }
+
+    // La musica dovrebbe già essere partita da shift_pre;
+    // se non è partita (es. entrata diretta in questa fase), avviala
+    if (!shiftMusicStarted && brk.has_sound) {
+        shiftMusicStarted = true;
+        playShiftChangeSound(brk.id, (data.shift_music_duration || 60) * 1000);
+    }
+}
+
 // ===================================================================
 //  AUDIO
 // ===================================================================
@@ -494,6 +584,27 @@ function playBreakSound(breakId) {
         breakAudio.play().catch(e => console.warn('Impossibile riprodurre audio:', e));
     } catch (e) {
         console.error('Errore riproduzione audio:', e);
+    }
+}
+
+function playShiftChangeSound(breakId, durationMs) {
+    stopBreakSound();
+    try {
+        breakAudio = new Audio('/api/breaks/' + breakId + '/sound');
+        breakAudio.loop = true;  // Ripeti se il brano è troppo corto
+        breakAudio.play().catch(e => console.warn('Impossibile riprodurre audio:', e));
+
+        // Ferma dopo la durata configurata (default 60s)
+        shiftMusicTimer = setTimeout(() => {
+            if (breakAudio) {
+                breakAudio.loop = false;
+                breakAudio.pause();
+                breakAudio = null;
+            }
+            shiftMusicTimer = null;
+        }, durationMs);
+    } catch (e) {
+        console.error('Errore riproduzione audio cambio turno:', e);
     }
 }
 

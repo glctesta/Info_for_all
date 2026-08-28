@@ -330,60 +330,91 @@ def get_current_break():
                 "function_id": row[9]
             })
 
+        # Parametri cambio turno
+        shift_pre_secs = breaks_config.get("shift_change_pre_seconds", 300)
+        shift_music_adv = breaks_config.get("shift_change_music_advance_seconds", 15)
+        shift_music_dur = breaks_config.get("shift_change_music_duration_seconds", 60)
+
         def _time_str_to_secs(t):
             p = t.split(':')
             return int(p[0]) * 3600 + int(p[1]) * 60 + int(p[2])
 
-        # Cerca la fascia oraria attiva (include i 30s prima e 30s dopo)
+        # Cerca la fascia oraria attiva (include pre-annuncio e post-annuncio)
         for (ft, tt), brk in slots.items():
             from_secs = _time_str_to_secs(ft)
             to_secs = _time_str_to_secs(tt)
-            break_duration = to_secs - from_secs
 
-            # Timeline fasi:
-            # pre_start:      FromTime - pre_announce  →  FromTime
-            # announce_start: FromTime                 →  FromTime + announce_dur
-            # document:       FromTime + announce_dur  →  ToTime - pre_announce
-            # pre_end:        ToTime - pre_announce    →  ToTime
-            # announce_end:   ToTime                   →  ToTime + announce_dur
+            if brk["is_for_change_shift"] == 1:
+                # ── CAMBIO TURNO ──
+                # Usa solo FromTime. Ignora ToTime.
+                # Timeline:
+                #   FromTime - 5min  →  FromTime       : shift_pre (orologio + countdown 5min)
+                #   FromTime         →  FromTime + 45s  : shift_announce (reparti + musica)
+                # La musica parte a FromTime-15s e dura 60s (gestita dal frontend)
+                p_start = from_secs - shift_pre_secs
+                p_announce_end = from_secs + (shift_music_dur - shift_music_adv)
 
-            p1_start = from_secs - pre_announce
-            p2_start = from_secs
-            p3_start = from_secs + announce_dur
-            p4_start = to_secs - pre_announce
-            p5_start = to_secs
-            p5_end   = to_secs + announce_dur
+                phase = None
+                countdown = 0
 
-            phase = None
-            countdown = 0
+                if p_start <= now_secs < from_secs:
+                    phase = "shift_pre"
+                    countdown = from_secs - now_secs
+                elif from_secs <= now_secs < p_announce_end:
+                    phase = "shift_announce"
+                    countdown = p_announce_end - now_secs
 
-            if p1_start <= now_secs < p2_start:
-                phase = "pre_start"
-                countdown = p2_start - now_secs
-            elif p2_start <= now_secs < p3_start:
-                phase = "announce_start"
-                countdown = p3_start - now_secs
-            elif break_duration > (pre_announce + announce_dur) and p3_start <= now_secs < p4_start:
-                phase = "document"
-                countdown = p4_start - now_secs
-            elif p4_start <= now_secs < p5_start and break_duration > (pre_announce + announce_dur):
-                phase = "pre_end"
-                countdown = p5_start - now_secs
-            elif (p3_start <= now_secs < p5_start) and break_duration <= (pre_announce + announce_dur):
-                # Pausa troppo corta per la fase document: mostra pre_end
-                phase = "pre_end"
-                countdown = p5_start - now_secs
-            elif p5_start <= now_secs < p5_end:
-                phase = "announce_end"
-                countdown = p5_end - now_secs
+                if phase:
+                    return jsonify({
+                        "active": True,
+                        "phase": phase,
+                        "countdown": countdown,
+                        "break": brk,
+                        "shift_music_advance": shift_music_adv,
+                        "shift_music_duration": shift_music_dur
+                    })
+            else:
+                # ── PAUSA NORMALE ──
+                # Timeline a 5 fasi:
+                #   pre_start → announce_start → document → pre_end → announce_end
+                break_duration = to_secs - from_secs
 
-            if phase:
-                return jsonify({
-                    "active": True,
-                    "phase": phase,
-                    "countdown": countdown,
-                    "break": brk
-                })
+                p1_start = from_secs - pre_announce
+                p2_start = from_secs
+                p3_start = from_secs + announce_dur
+                p4_start = to_secs - pre_announce
+                p5_start = to_secs
+                p5_end   = to_secs + announce_dur
+
+                phase = None
+                countdown = 0
+
+                if p1_start <= now_secs < p2_start:
+                    phase = "pre_start"
+                    countdown = p2_start - now_secs
+                elif p2_start <= now_secs < p3_start:
+                    phase = "announce_start"
+                    countdown = p3_start - now_secs
+                elif break_duration > (pre_announce + announce_dur) and p3_start <= now_secs < p4_start:
+                    phase = "document"
+                    countdown = p4_start - now_secs
+                elif p4_start <= now_secs < p5_start and break_duration > (pre_announce + announce_dur):
+                    phase = "pre_end"
+                    countdown = p5_start - now_secs
+                elif (p3_start <= now_secs < p5_start) and break_duration <= (pre_announce + announce_dur):
+                    phase = "pre_end"
+                    countdown = p5_start - now_secs
+                elif p5_start <= now_secs < p5_end:
+                    phase = "announce_end"
+                    countdown = p5_end - now_secs
+
+                if phase:
+                    return jsonify({
+                        "active": True,
+                        "phase": phase,
+                        "countdown": countdown,
+                        "break": brk
+                    })
 
         return jsonify({"active": False})
     except Exception as e:

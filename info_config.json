@@ -26,6 +26,9 @@
         "id_sub_cdc": null,
         "pre_announce_seconds": 30,
         "announce_duration_seconds": 30,
+        "shift_change_pre_seconds": 300,
+        "shift_change_music_advance_seconds": 15,
+        "shift_change_music_duration_seconds": 60,
         "smoking_break_label": "\ud83d\udeac Pausa Sigaretta",
         "shift_change_label": "\ud83d\udd04 Cambio Turno",
         "break_label": "\u2615 Pausa"
