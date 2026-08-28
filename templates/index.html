@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Info For All</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header id="header">
+        <img src="/img/Logo.png" alt="Logo" class="header-logo">
+        <div id="clock" class="clock">00:00:00</div>
+    </header>
+
+    <!-- Main content area -->
+    <main id="content-area">
+        <!-- Dynamic content containers will be created by JS -->
+        <!-- Container for iframes (monitor URLs) and document viewer -->
+        <div id="slide-container">
+            <!-- Slides are added dynamically -->
+        </div>
+    </main>
+
+    <!-- Progress bar -->
+    <div id="progress-bar-container">
+        <div id="progress-bar"></div>
+    </div>
+
+    <!-- Navigation dots -->
+    <div id="nav-dots"></div>
+
+    <!-- Footer -->
+    <footer id="footer">
+        <div class="footer-right">
+            <span class="powered-by">Powered by GTMC</span>
+            <img src="/img/gtmcLogo.jpg" alt="GTMC" class="footer-logo">
+        </div>
+    </footer>
+
+    <!-- Break overlay (hidden by default) -->
+    <div id="break-overlay" class="break-overlay hidden">
+        <div class="break-content">
+            <div id="break-clock" class="break-clock">00:00:00</div>
+            <div id="break-type" class="break-type"></div>
+            <div id="break-duration" class="break-duration"></div>
+            <div id="break-time-range" class="break-time-range"></div>
+            <div id="break-text" class="break-text"></div>
+            <div id="break-countdown" class="break-countdown"></div>
+        </div>
+    </div>
+
+    <script src="/static/js/app.js" defer></script>
+</body>
+</html>

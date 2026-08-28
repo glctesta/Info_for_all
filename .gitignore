@@ -1,0 +1,28 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+
+# Encrypted credentials (sensitive)
+db_config.enc
+encryption_key.key
+
+# Logs
+*.log
+
+# Temp files
+*.tmp
+*.bak
+
+# PyInstaller
+*.spec
+build/
+dist/
