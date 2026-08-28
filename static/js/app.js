@@ -15,17 +15,28 @@ let shiftMusicStarted = false;
 let shiftMusicTimer = null;
 let clockInterval = null;
 let analogClockInterval = null;
+let monitorName = '';   // Nome monitor dal parametro ?monitor=
 
 // ===================================================================
 //  INITIALIZATION
 // ===================================================================
 async function init() {
+    // Leggi il nome monitor dal parametro URL
+    const params = new URLSearchParams(window.location.search);
+    monitorName = params.get('monitor') || '';
+    console.log('Monitor:', monitorName || '(default)');
+
     await loadConfig();
     buildClockMarkers();
     await buildPlaylist();
     startClock();
     startRotation();
     startBreakChecker();
+}
+
+// Helper: costruisce URL API con parametro monitor
+function apiUrl(path) {
+    return monitorName ? path + '?monitor=' + encodeURIComponent(monitorName) : path;
 }
 
 // ===================================================================
@@ -133,7 +144,7 @@ function stopAnalogClock() {
 // ===================================================================
 async function loadConfig() {
     try {
-        const resp = await fetch('/api/config');
+        const resp = await fetch(apiUrl('/api/config'));
         config = await resp.json();
         document.documentElement.style.setProperty('--transition-duration',
             (config.rotation?.transition_duration_ms || 1000) + 'ms');
@@ -151,7 +162,7 @@ async function buildPlaylist() {
     playlist = [];
 
     try {
-        const resp = await fetch('/api/monitors');
+        const resp = await fetch(apiUrl('/api/monitors'));
         const monitors = await resp.json();
         monitors.forEach(url => playlist.push({ type: 'monitor', url }));
     } catch (e) { console.error('Errore nel caricamento dei monitor:', e); }

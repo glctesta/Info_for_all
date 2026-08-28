@@ -1,10 +1,37 @@
 {
-    "monitors": [
-        {"ip": "192.168.10.72", "port": 5001},
-        {"ip": "192.168.10.72", "port": 5065},
-		{"ip": "192.168.10.72", "port": 8085},
-		{"ip": "192.168.10.72", "port": 8090}
-    ],
+    "server": {
+        "host": "0.0.0.0",
+        "port": 5100
+    },
+    "client_version": "1.0.0",
+
+    "monitors": {
+        "MONITOR_PRODUZIONE_1": {
+            "urls": [
+                {"ip": "192.168.10.72", "port": 5001},
+                {"ip": "192.168.10.72", "port": 5065}
+            ],
+            "rotation": {
+                "monitor_interval_seconds": 300,
+                "slideshow_interval_seconds": 10,
+                "transition_effect": "fade",
+                "transition_duration_ms": 1000
+            }
+        },
+        "MONITOR_PRODUZIONE_2": {
+            "urls": [
+                {"ip": "192.168.10.72", "port": 8085},
+                {"ip": "192.168.10.72", "port": 8090}
+            ],
+            "rotation": {
+                "monitor_interval_seconds": 120,
+                "slideshow_interval_seconds": 15,
+                "transition_effect": "slide",
+                "transition_duration_ms": 800
+            }
+        }
+    },
+
     "documents": {
         "table_name": "InfoDocuments",
         "id_field": "Id",
@@ -13,12 +40,7 @@
         "filter": "DateOut IS NULL",
         "order_by": "Id"
     },
-    "rotation": {
-        "monitor_interval_seconds": 300,
-        "slideshow_interval_seconds": 10,
-        "transition_effect": "fade",
-        "transition_duration_ms": 1000
-    },
+
     "breaks": {
         "check_interval_seconds": 5,
         "shift": 1,
@@ -33,18 +55,11 @@
         "shift_change_label": "\ud83d\udd04 Cambio Turno",
         "break_label": "\u2615 Pausa"
     },
+
     "display": {
         "title": "Info For All",
         "background_color": "#1a1a2e",
         "show_clock": true,
         "show_progress_bar": true
-    },
-    "browser": {
-        "type": "chrome",
-        "monitor_index": 0
-    },
-    "server": {
-        "host": "127.0.0.1",
-        "port": 5100
     }
 }

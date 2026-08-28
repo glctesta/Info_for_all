@@ -1,5 +1,9 @@
+# Server
 flask
 pyodbc
 cryptography
+
+# Client
 selenium
 screeninfo
+pyinstaller

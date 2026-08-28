@@ -2,7 +2,7 @@ import json
 import os
 import logging
 from datetime import datetime, time as dtime
-from flask import Flask, render_template, jsonify, Response, send_from_directory
+from flask import Flask, render_template, jsonify, Response, send_from_directory, request
 
 log = logging.getLogger(__name__)
 
@@ -94,8 +94,20 @@ def serve_image(filename):
 @app.route('/api/config')
 def get_config():
     config = load_app_config()
+    monitor_name = request.args.get('monitor', '')
+
+    # Configurazione rotazione specifica per il monitor
+    monitors = config.get("monitors", {})
+    rotation = {}
+    if isinstance(monitors, dict) and monitor_name and monitor_name in monitors:
+        rotation = monitors[monitor_name].get("rotation", {})
+    elif isinstance(monitors, dict) and monitors:
+        # Fallback: primo monitor disponibile
+        first = next(iter(monitors.values()))
+        rotation = first.get("rotation", {})
+
     return jsonify({
-        "rotation": config.get("rotation", {}),
+        "rotation": rotation,
         "breaks": config.get("breaks", {}),
         "display": config.get("display", {})
     })
@@ -103,22 +115,40 @@ def get_config():
 @app.route('/api/monitors')
 def get_monitors():
     config = load_app_config()
-    monitors_config = config.get("monitors", [])
-    
+    monitor_name = request.args.get('monitor', '')
+    monitors = config.get("monitors", {})
+
     urls = []
-    if monitors_config:
-        for entry in monitors_config:
+
+    if isinstance(monitors, dict):
+        # Nuova struttura: dizionario {NomeMonitor: {urls: [...]}}
+        monitor_def = None
+        if monitor_name and monitor_name in monitors:
+            monitor_def = monitors[monitor_name]
+        elif monitors:
+            # Fallback: primo monitor
+            monitor_def = next(iter(monitors.values()))
+
+        if monitor_def:
+            for entry in monitor_def.get("urls", []):
+                url = _normalize_monitor_entry(entry)
+                if url:
+                    urls.append(url)
+    elif isinstance(monitors, list):
+        # Retrocompatibilità: vecchia struttura array
+        for entry in monitors:
             url = _normalize_monitor_entry(entry)
             if url:
                 urls.append(url)
-    
+
     if urls:
         return jsonify(urls)
-        
+
+    # Fallback al DB
     db = _get_db_connection()
     if not db:
         return jsonify([])
-        
+
     try:
         query = "SELECT [ExternalIP], [Port] FROM [Employee].[dbo].[ExternalIps] WHERE Dateout IS NULL AND ShowOnProductionMonitors = 1"
         cursor = db.connection.cursor()
@@ -132,8 +162,18 @@ def get_monitors():
         log.error("Errore nel recupero dei monitor dal DB: %s", e)
     finally:
         db.disconnect()
-        
+
     return jsonify(urls)
+
+
+@app.route('/api/monitors/list')
+def get_monitors_list():
+    """Restituisce l'elenco dei nomi monitor configurati."""
+    config = load_app_config()
+    monitors = config.get("monitors", {})
+    if isinstance(monitors, dict):
+        return jsonify(list(monitors.keys()))
+    return jsonify([])
 
 @app.route('/api/documents')
 def get_documents():
@@ -475,11 +515,39 @@ def get_break_sound(break_id):
     finally:
         db.disconnect()
 
+# ===================================================================
+#  Endpoint per aggiornamento client EXE
+# ===================================================================
+
+@app.route('/api/client/version')
+def get_client_version():
+    """Restituisce la versione corrente del client configurata sul server."""
+    config = load_app_config()
+    return jsonify({
+        "version": config.get("client_version", "1.0.0")
+    })
+
+
+@app.route('/api/client/download')
+def download_client():
+    """Serve l'EXE del client dalla cartella client_dist/."""
+    dist_dir = os.path.join(APP_DIR, 'client_dist')
+    exe_name = 'InfoForAll_Client.exe'
+    exe_path = os.path.join(dist_dir, exe_name)
+
+    if os.path.exists(exe_path):
+        return send_from_directory(dist_dir, exe_name, as_attachment=True)
+
+    return "Client EXE non trovato. Eseguire build_client.py per generarlo.", 404
+
+
 def create_app():
     return app
 
+
 def run_server(host, port):
-    app.run(host=host, port=port, debug=False, use_reloader=False)
+    app.run(host=host, port=port, debug=False, use_reloader=False, threaded=True)
+
 
 if __name__ == '__main__':
     run_server('0.0.0.0', 5100)

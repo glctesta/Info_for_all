@@ -1,0 +1,8 @@
+{
+    "server_url": "http://192.168.10.100:5100",
+    "monitor_name": "MONITOR_PRODUZIONE_1",
+    "browser": "chrome",
+    "monitor_index": 0,
+    "check_update_interval_minutes": 5,
+    "client_version": "1.0.0"
+}
