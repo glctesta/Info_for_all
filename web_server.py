@@ -277,59 +277,114 @@ def get_current_break():
     config = load_app_config()
     breaks_config = config.get("breaks", {})
     shift = breaks_config.get("shift")
-    id_cdc = breaks_config.get("id_cdc")
-    id_sub_cdc = breaks_config.get("id_sub_cdc")
-    
+    pre_announce = breaks_config.get("pre_announce_seconds", 30)
+    announce_dur = breaks_config.get("announce_duration_seconds", 30)
+
     if not shift:
         return jsonify({"active": False})
-        
+
     db = _get_db_connection()
     if not db:
         return jsonify({"active": False})
-        
+
     try:
+        # Recupera tutte le pause per il turno corrente (senza filtrare per cdc/subcdc
+        # perché vogliamo mostrare TUTTI i reparti coinvolti)
         query = """
         SELECT WorkBreakId, IsForChangeShift, Shift,
                CONVERT(VARCHAR(8), FromTime, 108) as FromTimeStr,
                CONVERT(VARCHAR(8), ToTime, 108) as ToTimeStr,
-               TextToshow,
-               CASE WHEN Sound IS NOT NULL AND DATALENGTH(Sound) > 0 THEN 1 ELSE 0 END as has_sound
+               CASE WHEN TextToshow IS NOT NULL AND DATALENGTH(TextToshow) > 0 THEN 1 ELSE 0 END as has_document,
+               CASE WHEN Sound IS NOT NULL AND DATALENGTH(Sound) > 0 THEN 1 ELSE 0 END as has_sound,
+               IdCdc, IdSubCdc, functionId
         FROM [Employee].[dbo].[WorkBreaks]
         WHERE Shift = ?
           AND (DateOut IS NULL OR DateOut >= CAST(GETDATE() AS DATE))
           AND (DateIn IS NULL OR DateIn <= CAST(GETDATE() AS DATE))
+        ORDER BY FromTime
         """
-        params = [shift]
-        
-        if id_cdc is not None:
-            query += " AND IdCdc = ?"
-            params.append(id_cdc)
-            
-        if id_sub_cdc is not None:
-            query += " AND IdSubCdc = ?"
-            params.append(id_sub_cdc)
-            
         cursor = db.connection.cursor()
-        cursor.execute(query, tuple(params))
+        cursor.execute(query, (shift,))
         rows = cursor.fetchall()
-        
-        now_time_str = datetime.now().strftime("%H:%M:%S")
-        
+
+        now = datetime.now()
+        now_secs = now.hour * 3600 + now.minute * 60 + now.second
+
+        # Raggruppa le pause per fascia oraria (FromTime/ToTime)
+        slots = {}
         for row in rows:
-            from_time = row[3]
-            to_time = row[4]
-            if from_time <= now_time_str <= to_time:
-                break_data = {
+            key = (row[3], row[4])  # (FromTimeStr, ToTimeStr)
+            if key not in slots:
+                slots[key] = {
                     "id": row[0],
                     "is_for_change_shift": row[1],
-                    "shift": row[2],
-                    "from_time": from_time,
-                    "to_time": to_time,
-                    "text_to_show": row[5],
-                    "has_sound": bool(row[6])
+                    "from_time": row[3],
+                    "to_time": row[4],
+                    "has_document": bool(row[5]),
+                    "has_sound": bool(row[6]),
+                    "departments": []
                 }
-                return jsonify({"active": True, "break": break_data})
-                
+            slots[key]["departments"].append({
+                "id_cdc": row[7],
+                "id_sub_cdc": row[8],
+                "function_id": row[9]
+            })
+
+        def _time_str_to_secs(t):
+            p = t.split(':')
+            return int(p[0]) * 3600 + int(p[1]) * 60 + int(p[2])
+
+        # Cerca la fascia oraria attiva (include i 30s prima e 30s dopo)
+        for (ft, tt), brk in slots.items():
+            from_secs = _time_str_to_secs(ft)
+            to_secs = _time_str_to_secs(tt)
+            break_duration = to_secs - from_secs
+
+            # Timeline fasi:
+            # pre_start:      FromTime - pre_announce  →  FromTime
+            # announce_start: FromTime                 →  FromTime + announce_dur
+            # document:       FromTime + announce_dur  →  ToTime - pre_announce
+            # pre_end:        ToTime - pre_announce    →  ToTime
+            # announce_end:   ToTime                   →  ToTime + announce_dur
+
+            p1_start = from_secs - pre_announce
+            p2_start = from_secs
+            p3_start = from_secs + announce_dur
+            p4_start = to_secs - pre_announce
+            p5_start = to_secs
+            p5_end   = to_secs + announce_dur
+
+            phase = None
+            countdown = 0
+
+            if p1_start <= now_secs < p2_start:
+                phase = "pre_start"
+                countdown = p2_start - now_secs
+            elif p2_start <= now_secs < p3_start:
+                phase = "announce_start"
+                countdown = p3_start - now_secs
+            elif break_duration > (pre_announce + announce_dur) and p3_start <= now_secs < p4_start:
+                phase = "document"
+                countdown = p4_start - now_secs
+            elif p4_start <= now_secs < p5_start and break_duration > (pre_announce + announce_dur):
+                phase = "pre_end"
+                countdown = p5_start - now_secs
+            elif (p3_start <= now_secs < p5_start) and break_duration <= (pre_announce + announce_dur):
+                # Pausa troppo corta per la fase document: mostra pre_end
+                phase = "pre_end"
+                countdown = p5_start - now_secs
+            elif p5_start <= now_secs < p5_end:
+                phase = "announce_end"
+                countdown = p5_end - now_secs
+
+            if phase:
+                return jsonify({
+                    "active": True,
+                    "phase": phase,
+                    "countdown": countdown,
+                    "break": brk
+                })
+
         return jsonify({"active": False})
     except Exception as e:
         log.error("Errore nel controllo della pausa corrente: %s", e)
@@ -337,24 +392,51 @@ def get_current_break():
     finally:
         db.disconnect()
 
+
+@app.route('/api/breaks/<int:break_id>/document')
+def get_break_document(break_id):
+    """Serve il documento (TextToshow varbinary) per una pausa specifica."""
+    db = _get_db_connection()
+    if not db:
+        return "Errore di connessione al DB", 500
+
+    try:
+        query = "SELECT TextToshow FROM [Employee].[dbo].[WorkBreaks] WHERE WorkBreakId = ?"
+        cursor = db.connection.cursor()
+        cursor.execute(query, (break_id,))
+        row = cursor.fetchone()
+
+        if row and row[0] and len(row[0]) > 0:
+            content = row[0]
+            mime_type = detect_mime_type(content)
+            return Response(content, mimetype=mime_type)
+
+        return "Documento non trovato", 404
+    except Exception as e:
+        log.error("Errore nel recupero del documento per la pausa %s: %s", break_id, e)
+        return "Errore interno", 500
+    finally:
+        db.disconnect()
+
+
 @app.route('/api/breaks/<int:break_id>/sound')
 def get_break_sound(break_id):
     db = _get_db_connection()
     if not db:
         return "Errore di connessione al DB", 500
-        
+
     try:
         query = "SELECT Sound FROM [Employee].[dbo].[WorkBreaks] WHERE WorkBreakId = ?"
         cursor = db.connection.cursor()
         cursor.execute(query, (break_id,))
         row = cursor.fetchone()
-        
+
         if row and row[0]:
             content = row[0]
             if len(content) > 0:
                 mime_type = detect_mime_type(content)
                 return Response(content, mimetype=mime_type)
-            
+
         return "Audio non trovato o non presente", 404
     except Exception as e:
         log.error("Errore nel recupero dell'audio per la pausa %s: %s", break_id, e)

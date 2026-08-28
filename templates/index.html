@@ -15,10 +15,8 @@
 
     <!-- Main content area -->
     <main id="content-area">
-        <!-- Dynamic content containers will be created by JS -->
-        <!-- Container for iframes (monitor URLs) and document viewer -->
         <div id="slide-container">
-            <!-- Slides are added dynamically -->
+            <!-- Slides aggiunti dinamicamente da JS -->
         </div>
     </main>
 
@@ -38,16 +36,46 @@
         </div>
     </footer>
 
-    <!-- Break overlay (hidden by default) -->
+    <!-- ===== BREAK OVERLAY (5 fasi) ===== -->
     <div id="break-overlay" class="break-overlay hidden">
-        <div class="break-content">
-            <div id="break-clock" class="break-clock">00:00:00</div>
-            <div id="break-type" class="break-type"></div>
-            <div id="break-duration" class="break-duration"></div>
-            <div id="break-time-range" class="break-time-range"></div>
-            <div id="break-text" class="break-text"></div>
-            <div id="break-countdown" class="break-countdown"></div>
+
+        <!-- FASE 1 & 4: Orologio analogico + countdown -->
+        <div id="phase-clock" class="phase-panel hidden">
+            <div class="analog-clock-wrapper">
+                <svg id="analog-clock" viewBox="0 0 300 300" class="analog-clock">
+                    <!-- Quadrante -->
+                    <circle cx="150" cy="150" r="145" class="clock-face"/>
+                    <circle cx="150" cy="150" r="140" class="clock-inner"/>
+                    <!-- Marcatori ore (generati da JS) -->
+                    <g id="clock-markers"></g>
+                    <!-- Lancette -->
+                    <line id="hand-hour" class="hand hand-hour" x1="150" y1="150" x2="150" y2="70"/>
+                    <line id="hand-minute" class="hand hand-minute" x1="150" y1="150" x2="150" y2="40"/>
+                    <line id="hand-second" class="hand hand-second" x1="150" y1="150" x2="150" y2="30"/>
+                    <!-- Centro -->
+                    <circle cx="150" cy="150" r="5" class="clock-center"/>
+                </svg>
+                <!-- Countdown sovrapposto al centro dell'orologio -->
+                <div id="clock-countdown" class="clock-countdown">30</div>
+            </div>
+            <div id="phase-clock-label" class="phase-label">Pausa tra...</div>
         </div>
+
+        <!-- FASE 2 & 5: Reparti/Funzioni + Suono -->
+        <div id="phase-announce" class="phase-panel hidden">
+            <div id="announce-type" class="announce-type"></div>
+            <div id="announce-time-range" class="announce-time-range"></div>
+            <div class="announce-section-title">Reparti e Funzioni in pausa</div>
+            <div id="announce-departments" class="announce-departments">
+                <!-- Lista reparti generata da JS -->
+            </div>
+        </div>
+
+        <!-- FASE 3: Documento (TextToshow) -->
+        <div id="phase-document" class="phase-panel hidden">
+            <iframe id="break-document-frame" class="break-document-frame"></iframe>
+        </div>
+
     </div>
 
     <script src="/static/js/app.js" defer></script>

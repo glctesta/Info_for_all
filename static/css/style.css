@@ -1,14 +1,20 @@
-/* Reset & Base */
+/* ============================== */
+/*  Reset & Base                  */
+/* ============================== */
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', Tahoma, sans-serif; }
 body { background-color: #1a1a2e; color: white; }
 
-/* Header */
+/* ============================== */
+/*  Header                        */
+/* ============================== */
 #header { position: fixed; top: 0; left: 0; right: 0; height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; background: linear-gradient(135deg, #16213e, #0f3460); z-index: 100; }
 .header-logo { height: 45px; }
 .clock { font-size: 28px; font-weight: 700; font-family: 'Consolas', monospace; color: #e94560; text-shadow: 0 0 10px rgba(233,69,96,0.5); }
 
-/* Main Content */
+/* ============================== */
+/*  Main Content / Slides         */
+/* ============================== */
 #content-area { position: absolute; top: 60px; bottom: 60px; left: 0; right: 0; overflow: hidden; }
 #slide-container { width: 100%; height: 100%; position: relative; }
 .slide { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; visibility: hidden; transition-property: opacity, transform, filter; }
@@ -16,7 +22,9 @@ body { background-color: #1a1a2e; color: white; }
 .slide.exiting { z-index: 1; }
 .slide iframe, .slide img, .slide embed { width: 100%; height: 100%; border: none; object-fit: contain; background: #1a1a2e; }
 
-/* Transitions */
+/* ============================== */
+/*  6 Transition Effects          */
+/* ============================== */
 .transition-fade .slide.active { animation: fadeIn var(--transition-duration) ease-in-out; }
 .transition-fade .slide.exiting { animation: fadeOut var(--transition-duration) ease-in-out forwards; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -47,37 +55,217 @@ body { background-color: #1a1a2e; color: white; }
 @keyframes blurIn { from { filter: blur(20px); opacity: 0; } to { filter: blur(0); opacity: 1; } }
 @keyframes blurOut { from { filter: blur(0); opacity: 1; } to { filter: blur(20px); opacity: 0; } }
 
-/* Progress Bar */
+/* ============================== */
+/*  Progress Bar                  */
+/* ============================== */
 #progress-bar-container { position: fixed; bottom: 60px; left: 0; right: 0; height: 4px; background: rgba(255,255,255,0.1); z-index: 100; }
 #progress-bar { height: 100%; width: 0%; background: linear-gradient(90deg, #e94560, #0f3460); transition: width 0.3s linear; }
 
-/* Navigation Dots */
+/* ============================== */
+/*  Navigation Dots               */
+/* ============================== */
 #nav-dots { position: fixed; bottom: 68px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 100; }
 .nav-dot { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.3); cursor: pointer; transition: all 0.3s; }
 .nav-dot.active { background: #e94560; transform: scale(1.3); box-shadow: 0 0 8px rgba(233,69,96,0.6); }
 
-/* Footer */
+/* ============================== */
+/*  Footer                        */
+/* ============================== */
 #footer { position: fixed; bottom: 0; left: 0; right: 0; height: 60px; display: flex; align-items: center; justify-content: flex-end; padding: 0 20px; background: linear-gradient(135deg, #16213e, #0f3460); z-index: 100; }
 .footer-right { display: flex; align-items: center; gap: 10px; }
 .powered-by { font-size: 14px; color: rgba(255,255,255,0.7); font-style: italic; }
 .footer-logo { height: 35px; border-radius: 4px; }
 
-/* Break Overlay */
-.break-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); z-index: 9999; display: flex; align-items: center; justify-content: center; }
+/* ============================== */
+/*  Break Overlay (contenitore)   */
+/* ============================== */
+.break-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.94);
+    z-index: 9999;
+    display: flex; align-items: center; justify-content: center;
+}
 .break-overlay.hidden { display: none; }
 .break-overlay.showing { animation: overlayFadeIn 0.5s ease-out; }
 .break-overlay.hiding { animation: overlayFadeOut 0.5s ease-in forwards; }
-.break-content { text-align: center; }
-.break-clock { font-size: 80px; font-family: 'Consolas', monospace; color: #e94560; text-shadow: 0 0 30px rgba(233,69,96,0.5); margin-bottom: 30px; }
-.break-type { font-size: 48px; margin-bottom: 20px; }
-.break-duration { font-size: 32px; color: rgba(255,255,255,0.8); margin-bottom: 10px; }
-.break-time-range { font-size: 28px; color: rgba(255,255,255,0.6); margin-bottom: 30px; font-family: 'Consolas', monospace; }
-.break-text { font-size: 36px; color: #fbbf24; margin-bottom: 40px; font-style: italic; max-width: 80%; margin-left: auto; margin-right: auto; }
-.break-countdown { font-size: 40px; font-family: 'Consolas', monospace; color: white; }
-.break-countdown span { color: #e94560; font-weight: bold; }
-
 @keyframes overlayFadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes overlayFadeOut { from { opacity: 1; } to { opacity: 0; } }
 
-/* Utility */
+.phase-panel {
+    width: 100%; height: 100%;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    animation: phaseFadeIn 0.4s ease-out;
+}
+.phase-panel.hidden { display: none; }
+@keyframes phaseFadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+
+/* ============================== */
+/*  FASE 1 & 4: Orologio Analogico*/
+/* ============================== */
+.analog-clock-wrapper {
+    position: relative;
+    width: 400px; height: 400px;
+}
+.analog-clock {
+    width: 100%; height: 100%;
+    filter: drop-shadow(0 0 30px rgba(233, 69, 96, 0.3));
+}
+.clock-face {
+    fill: none;
+    stroke: #e94560;
+    stroke-width: 3;
+}
+.clock-inner {
+    fill: rgba(26, 26, 46, 0.9);
+    stroke: rgba(233, 69, 96, 0.2);
+    stroke-width: 1;
+}
+.hand {
+    stroke-linecap: round;
+}
+.hand-hour {
+    stroke: #ffffff;
+    stroke-width: 5;
+    filter: drop-shadow(0 0 3px rgba(255,255,255,0.5));
+}
+.hand-minute {
+    stroke: #ffffff;
+    stroke-width: 3.5;
+    filter: drop-shadow(0 0 3px rgba(255,255,255,0.4));
+}
+.hand-second {
+    stroke: #e94560;
+    stroke-width: 2;
+    filter: drop-shadow(0 0 4px rgba(233, 69, 96, 0.6));
+}
+.clock-center {
+    fill: #e94560;
+    filter: drop-shadow(0 0 5px rgba(233, 69, 96, 0.8));
+}
+.clock-marker-hour {
+    stroke: #ffffff;
+    stroke-width: 3;
+    stroke-linecap: round;
+}
+.clock-marker-minute {
+    stroke: rgba(255,255,255,0.25);
+    stroke-width: 1;
+    stroke-linecap: round;
+}
+.clock-number {
+    fill: rgba(255,255,255,0.6);
+    font-size: 18px;
+    font-family: 'Segoe UI', sans-serif;
+    font-weight: 600;
+    text-anchor: middle;
+    dominant-baseline: central;
+}
+
+/* Countdown sovrapposto al centro orologio */
+.clock-countdown {
+    position: absolute;
+    top: 58%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 72px;
+    font-family: 'Consolas', monospace;
+    font-weight: 900;
+    color: #e94560;
+    text-shadow: 0 0 40px rgba(233, 69, 96, 0.7), 0 0 80px rgba(233, 69, 96, 0.3);
+    animation: countdownPulse 1s ease-in-out infinite;
+}
+@keyframes countdownPulse {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); }
+    50% { transform: translate(-50%, -50%) scale(1.08); }
+}
+
+.phase-label {
+    font-size: 28px;
+    color: rgba(255, 255, 255, 0.7);
+    margin-top: 30px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+/* ============================== */
+/*  FASE 2 & 5: Annuncio Reparti  */
+/* ============================== */
+.announce-type {
+    font-size: 52px;
+    margin-bottom: 15px;
+    animation: announceSlideIn 0.5s ease-out;
+}
+@keyframes announceSlideIn {
+    from { transform: translateY(-30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+.announce-time-range {
+    font-size: 30px;
+    color: rgba(255,255,255,0.6);
+    font-family: 'Consolas', monospace;
+    margin-bottom: 35px;
+}
+
+.announce-section-title {
+    font-size: 22px;
+    color: #fbbf24;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid rgba(251, 191, 36, 0.3);
+}
+
+.announce-departments {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px;
+    max-width: 900px;
+}
+.dept-card {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(233, 69, 96, 0.3);
+    border-radius: 12px;
+    padding: 18px 28px;
+    min-width: 200px;
+    text-align: center;
+    animation: deptCardIn 0.4s ease-out backwards;
+}
+.dept-card:nth-child(1) { animation-delay: 0.1s; }
+.dept-card:nth-child(2) { animation-delay: 0.2s; }
+.dept-card:nth-child(3) { animation-delay: 0.3s; }
+.dept-card:nth-child(4) { animation-delay: 0.4s; }
+.dept-card:nth-child(5) { animation-delay: 0.5s; }
+.dept-card:nth-child(6) { animation-delay: 0.6s; }
+@keyframes deptCardIn {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+.dept-card .dept-label {
+    font-size: 11px;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+}
+.dept-card .dept-value {
+    font-size: 18px;
+    font-weight: 600;
+    color: #e0e0e0;
+}
+
+/* ============================== */
+/*  FASE 3: Documento (iframe)    */
+/* ============================== */
+.break-document-frame {
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: white;
+}
+
+/* ============================== */
+/*  Utility                       */
+/* ============================== */
 .hidden { display: none !important; }

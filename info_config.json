@@ -1,7 +1,9 @@
 {
     "monitors": [
         {"ip": "192.168.10.72", "port": 5001},
-        {"ip": "192.168.10.72", "port": 5065}
+        {"ip": "192.168.10.72", "port": 5065},
+		{"ip": "192.168.10.72", "port": 8085},
+		{"ip": "192.168.10.72", "port": 8090}
     ],
     "documents": {
         "table_name": "InfoDocuments",
@@ -18,11 +20,13 @@
         "transition_duration_ms": 1000
     },
     "breaks": {
-        "check_interval_seconds": 15,
+        "check_interval_seconds": 5,
         "shift": 1,
         "id_cdc": null,
         "id_sub_cdc": null,
-        "smoking_break_label": "\ud83d\udeb0 Pausa Sigaretta",
+        "pre_announce_seconds": 30,
+        "announce_duration_seconds": 30,
+        "smoking_break_label": "\ud83d\udeac Pausa Sigaretta",
         "shift_change_label": "\ud83d\udd04 Cambio Turno",
         "break_label": "\u2615 Pausa"
     },
