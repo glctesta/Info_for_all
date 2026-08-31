@@ -54,15 +54,25 @@ def detect_mime_type(data: bytes) -> str:
     return 'application/octet-stream'
 
 def _normalize_monitor_entry(entry) -> str | None:
-    """Normalizza la voce del monitor in una stringa URL."""
+    """Normalizza la voce del monitor in una stringa URL.
+    Supporta: stringa URL, oppure dict con ip, port e opzionalmente path, scheme.
+    Esempi:
+        "http://192.168.10.72:8071/dashboard"
+        {"ip": "192.168.10.72", "port": 8071}
+        {"ip": "192.168.10.72", "port": 8071, "path": "/dashboard/view"}
+    """
     if isinstance(entry, str):
         return entry
     if isinstance(entry, dict):
         ip = entry.get('ip')
         port = entry.get('port')
         scheme = entry.get('scheme', 'http')
+        path = entry.get('path', '').strip()
         if ip and port:
-            return f"{scheme}://{ip}:{port}/"
+            # Assicura che il path inizi con /
+            if path and not path.startswith('/'):
+                path = '/' + path
+            return f"{scheme}://{ip}:{port}{path or '/'}"
     return None
 
 def _get_db_connection():
