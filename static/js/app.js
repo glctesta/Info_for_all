@@ -33,6 +33,29 @@ async function init() {
     startClock();
     startRotation();
     startBreakChecker();
+    startConfigReloader();
+}
+
+// ===================================================================
+//  CONFIG HOT-RELOAD (ogni 2 minuti)
+// ===================================================================
+let lastPlaylistJson = '';
+
+function startConfigReloader() {
+    const intervalMs = (config.rotation?.config_reload_seconds || 120) * 1000;
+    setInterval(async () => {
+        if (isBreakActive) return; // Non ricaricare durante una pausa
+        try {
+            await loadConfig();
+            const oldJson = lastPlaylistJson;
+            await buildPlaylist(true); // true = silent, non resettare slide se non cambiato
+            if (lastPlaylistJson !== oldJson) {
+                console.log('Playlist aggiornata dal server.');
+                showSlide(0);
+                scheduleNextSlide();
+            }
+        } catch (e) { console.error('Errore nel reload config:', e); }
+    }, intervalMs);
 }
 
 function apiUrl(path) {
@@ -133,21 +156,29 @@ async function loadConfig() {
 // ===================================================================
 //  PLAYLIST
 // ===================================================================
-async function buildPlaylist() {
-    playlist = [];
+async function buildPlaylist(silent) {
+    const newPlaylist = [];
     try {
         const resp = await fetch(apiUrl('/api/monitors'));
         const monitors = await resp.json();
-        monitors.forEach(url => playlist.push({ type: 'monitor', url }));
+        monitors.forEach(url => newPlaylist.push({ type: 'monitor', url }));
     } catch (e) { console.error('Errore caricamento monitor:', e); }
 
     try {
         const resp = await fetch('/api/documents');
         const docs = await resp.json();
-        docs.forEach(doc => playlist.push({
+        docs.forEach(doc => newPlaylist.push({
             type: 'document', id: doc.id, title: doc.title || 'Documento ' + doc.id
         }));
     } catch (e) { console.error('Errore caricamento documenti:', e); }
+
+    const newJson = JSON.stringify(newPlaylist);
+
+    // Se silent e la playlist non è cambiata, non ricostruire il DOM
+    if (silent && newJson === lastPlaylistJson) return;
+
+    playlist = newPlaylist;
+    lastPlaylistJson = newJson;
 
     if (playlist.length === 0) {
         document.getElementById('slide-container').innerHTML =
@@ -156,7 +187,7 @@ async function buildPlaylist() {
     }
     createSlides();
     createNavDots();
-    showSlide(0);
+    if (!silent) showSlide(0);
 }
 
 // ===================================================================
