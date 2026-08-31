@@ -361,10 +361,10 @@ function showPhase(data) {
     if (docAlternateTimer) { clearInterval(docAlternateTimer); docAlternateTimer = null; }
 
     switch (data.phase) {
-        case 'pre_start':    showPhaseClock(data.countdown, 'Pausa tra...'); break;
+        case 'pre_start':    showPhaseClock(data.countdown, 'Pauză în...'); break;
         case 'announce_start': showPhaseAnnounce(brk, 'inizio'); break;
         case 'document':     showPhaseDocument(brk); break;
-        case 'pre_end':      showPhaseClock(data.countdown, 'Fine pausa tra...'); break;
+        case 'pre_end':      showPhaseClock(data.countdown, 'Sfârșitul pauzei în...'); break;
         case 'announce_end': showPhaseAnnounce(brk, 'fine'); break;
         case 'shift_pre':    showPhaseShiftPre(data); break;
         case 'shift_announce': showPhaseShiftAnnounce(data); break;
@@ -389,14 +389,22 @@ function getReasonEmoji(reason) {
 function getReasonMessage(reason) {
     const r = (reason || '').toLowerCase();
     if (r.includes('pran') || r.includes('masa') || r.includes('lunch') || r.includes('mensa'))
-        return '<div class="reason-fun reason-lunch">🍝 Buon appetito a tutti! 🍕</div>';
+        return '<div class="reason-fun reason-lunch">🍝 Poftă bună tuturor! 🍕</div>';
     if (r.includes('sigar') || r.includes('fumar') || r.includes('tigar') || r.includes('smok'))
         return '<div class="reason-fun reason-smoke">' +
             '<div class="smoke-warning">🚭</div>' +
-            '<div class="smoke-msg">Lo sapevi? Ogni sigaretta in meno è un regalo alla tua salute!</div>' +
-            '<div class="smoke-sub">Il tuo corpo inizia a rigenerarsi dopo sole 20 minuti dall\'ultima sigaretta.</div>' +
+            '<div class="smoke-msg">Știați? Fiecare țigară în minus este un cadou pentru sănătatea ta!</div>' +
+            '<div class="smoke-sub">Corpul tău începe să se regenereze după doar 20 de minute de la ultima țigară.</div>' +
             '</div>';
     return '';
+}
+
+function formatCountdown(totalSeconds) {
+    const secs = Math.max(0, Math.ceil(totalSeconds));
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    if (m > 0) return m + ':' + String(s).padStart(2, '0');
+    return String(s);
 }
 
 function buildSoundUrl(brk) {
@@ -425,7 +433,7 @@ function showPhaseClock(countdown, label) {
 
 function updateClockCountdown(seconds) {
     const el = document.getElementById('clock-countdown');
-    if (el) el.textContent = Math.max(0, Math.ceil(seconds));
+    if (el) el.textContent = formatCountdown(seconds);
 }
 
 // ===================================================================
@@ -442,7 +450,7 @@ function showPhaseAnnounce(brk, moment) {
 
     // Tipo pausa
     const typeEl = document.getElementById('announce-type');
-    typeEl.textContent = brk.reason || 'Pausa';
+    typeEl.textContent = brk.reason || 'Pauză';
 
     // Messaggio simpatico sotto il motivo
     const reasonEl = document.getElementById('announce-reason');
@@ -478,14 +486,14 @@ function showPhaseDocument(brk) {
     if (brk.has_document) {
         iframe.src = buildDocUrl(brk);
     } else {
-        iframe.srcdoc = '<html><body style="display:flex;align-items:center;justify-content:center;height:100%;margin:0;background:#1a1a2e;color:white;font-family:Segoe UI,sans-serif;font-size:24px;">Pausa in corso</body></html>';
+        iframe.srcdoc = '<html><body style="display:flex;align-items:center;justify-content:center;height:100%;margin:0;background:#1a1a2e;color:white;font-family:Segoe UI,sans-serif;font-size:24px;">Pauză în curs</body></html>';
     }
 
     // Prepara vista reparti alternata
     const reasonImg = document.getElementById('doc-reason-image');
     reasonImg.innerHTML = '<span class="reason-emoji-sm">' + getReasonEmoji(brk.reason) + '</span>';
     const reasonText = document.getElementById('doc-reason-text');
-    reasonText.innerHTML = '<div class="doc-reason-title">' + escapeHtml(brk.reason || 'Pausa') + '</div>'
+    reasonText.innerHTML = '<div class="doc-reason-title">' + escapeHtml(brk.reason || 'Pauză') + '</div>'
                          + getReasonMessage(brk.reason);
     buildDepartmentCards('doc-departments', brk.departments);
 
@@ -513,7 +521,7 @@ function showPhaseDocument(brk) {
 function showPhaseShiftPre(data) {
     const panel = document.getElementById('phase-clock');
     panel.classList.remove('hidden');
-    document.getElementById('phase-clock-label').textContent = 'Cambio turno tra...';
+    document.getElementById('phase-clock-label').textContent = 'Schimb de tură în...';
     updateClockCountdown(data.countdown);
     startAnalogClock();
 
@@ -533,9 +541,9 @@ function showPhaseShiftAnnounce(data) {
     document.getElementById('announce-reason-image').innerHTML =
         '<span class="reason-emoji">🔄</span>';
     document.getElementById('announce-type').textContent =
-        brk.reason || config.breaks?.shift_change_label || 'Cambio Turno';
+        brk.reason || config.breaks?.shift_change_label || 'Schimb de Tură';
     document.getElementById('announce-reason').innerHTML = '';
-    document.getElementById('announce-time-range').textContent = 'Ore ' + brk.from_time;
+    document.getElementById('announce-time-range').textContent = 'Ora ' + brk.from_time;
     buildDepartmentCards('announce-departments', brk.departments);
 
     if (!shiftMusicStarted && brk.has_sound) {
@@ -557,11 +565,11 @@ function buildDepartmentCards(containerId, departments) {
         card.className = 'dept-card';
         let html = '';
         if (dept.cdc) {
-            html += '<div class="dept-label">Reparto</div>';
+            html += '<div class="dept-label">Departament</div>';
             html += '<div class="dept-value">' + escapeHtml(String(dept.cdc)) + '</div>';
         }
         if (dept.sub_cdc) {
-            html += '<div class="dept-label">Sotto-Reparto</div>';
+            html += '<div class="dept-label">Sub-departament</div>';
             html += '<div class="dept-value">' + escapeHtml(String(dept.sub_cdc)) + '</div>';
         }
         if (html) {

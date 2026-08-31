@@ -165,26 +165,40 @@ body { background-color: #1a1a2e; color: white; }
 /* Countdown sovrapposto al centro orologio */
 .clock-countdown {
     position: absolute;
-    top: 58%; left: 50%;
+    top: 55%; left: 50%;
     transform: translate(-50%, -50%);
-    font-size: 72px;
-    font-family: 'Consolas', monospace;
+    font-size: 64px;
+    font-family: 'Consolas', 'Courier New', monospace;
     font-weight: 900;
     color: #e94560;
-    text-shadow: 0 0 40px rgba(233, 69, 96, 0.7), 0 0 80px rgba(233, 69, 96, 0.3);
+    text-shadow:
+        0 0 30px rgba(233, 69, 96, 0.8),
+        0 0 60px rgba(233, 69, 96, 0.4),
+        0 0 100px rgba(233, 69, 96, 0.2);
+    background: radial-gradient(ellipse, rgba(233, 69, 96, 0.12) 0%, transparent 70%);
+    padding: 10px 30px;
+    border-radius: 12px;
+    letter-spacing: 4px;
     animation: countdownPulse 1s ease-in-out infinite;
 }
 @keyframes countdownPulse {
-    0%, 100% { transform: translate(-50%, -50%) scale(1); }
-    50% { transform: translate(-50%, -50%) scale(1.08); }
+    0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    50% { transform: translate(-50%, -50%) scale(1.05); opacity: 0.85; }
 }
 
 .phase-label {
-    font-size: 28px;
-    color: rgba(255, 255, 255, 0.7);
+    font-size: 32px;
+    color: rgba(255, 255, 255, 0.85);
     margin-top: 30px;
-    letter-spacing: 2px;
+    letter-spacing: 4px;
     text-transform: uppercase;
+    font-weight: 300;
+    text-shadow: 0 0 20px rgba(233, 69, 96, 0.3);
+    animation: labelFadeIn 0.8s ease-out;
+}
+@keyframes labelFadeIn {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 /* ============================== */
