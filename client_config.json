@@ -1,5 +1,5 @@
 {
-    "server_url": "http://192.168.10.100:5100",
+    "server_url": "http://192.168.10.72:5100",
     "monitor_name": "MONITOR_PRODUZIONE_1",
     "browser": "chrome",
     "monitor_index": 0,
