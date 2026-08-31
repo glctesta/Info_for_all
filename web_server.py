@@ -313,7 +313,7 @@ def _break_query():
     LEFT JOIN Employee.dbo.CdcSub cs ON cs.CdcId = c.CdcId
     WHERE wb.DateOut IS NULL
       AND wb.Shift = ?
-    ORDER BY wb.FromTime, wb.ToTime, c.CdcDescription, cs.SubCdcDescription
+    ORDER BY FromTimeStr, ToTimeStr, c.CdcDescription, cs.SubCdcDescription
     """
 
 
