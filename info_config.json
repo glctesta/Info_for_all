@@ -44,8 +44,6 @@
     "breaks": {
         "check_interval_seconds": 5,
         "shift": 1,
-        "id_cdc": null,
-        "id_sub_cdc": null,
         "pre_announce_seconds": 30,
         "announce_duration_seconds": 30,
         "shift_change_pre_seconds": 300,

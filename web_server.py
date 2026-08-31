@@ -255,62 +255,67 @@ def get_breaks():
     config = load_app_config()
     breaks_config = config.get("breaks", {})
     shift = breaks_config.get("shift")
-    id_cdc = breaks_config.get("id_cdc")
-    id_sub_cdc = breaks_config.get("id_sub_cdc")
-    
+
     if not shift:
         return jsonify([])
-        
+
     db = _get_db_connection()
     if not db:
         return jsonify([])
-        
+
     try:
-        query = """
-        SELECT WorkBreakId, IsForChangeShift, Shift,
-               CONVERT(VARCHAR(8), FromTime, 108) as FromTimeStr,
-               CONVERT(VARCHAR(8), ToTime, 108) as ToTimeStr,
-               TextToshow,
-               CASE WHEN Sound IS NOT NULL AND DATALENGTH(Sound) > 0 THEN 1 ELSE 0 END as has_sound
-        FROM [Employee].[dbo].[WorkBreaks]
-        WHERE Shift = ?
-          AND (DateOut IS NULL OR DateOut >= CAST(GETDATE() AS DATE))
-          AND (DateIn IS NULL OR DateIn <= CAST(GETDATE() AS DATE))
-        """
-        params = [shift]
-        
-        if id_cdc is not None:
-            query += " AND IdCdc = ?"
-            params.append(id_cdc)
-            
-        if id_sub_cdc is not None:
-            query += " AND IdSubCdc = ?"
-            params.append(id_sub_cdc)
-            
-        query += " ORDER BY FromTime"
-        
+        query = _break_query()
         cursor = db.connection.cursor()
-        cursor.execute(query, tuple(params))
+        cursor.execute(query, (shift,))
         rows = cursor.fetchall()
-        
+
         breaks = []
         for row in rows:
             breaks.append({
-                "id": row[0],
                 "is_for_change_shift": row[1],
                 "shift": row[2],
                 "from_time": row[3],
                 "to_time": row[4],
-                "text_to_show": row[5],
-                "has_sound": bool(row[6])
+                "has_sound": bool(row[5]),
+                "has_document": bool(row[6]),
+                "reason": row[7],
+                "cdc": row[8],
+                "sub_cdc": row[9]
             })
-            
+
         return jsonify(breaks)
     except Exception as e:
         log.error("Errore nel recupero delle pause dal DB: %s", e)
         return jsonify([])
     finally:
         db.disconnect()
+
+
+def _break_query():
+    """Query principale pause con JOIN per reparti e motivo."""
+    return """
+    SELECT DISTINCT
+           wb.WorkBreakId,
+           wb.IsForChangeShift,
+           wb.Shift,
+           CONVERT(VARCHAR(8), wb.FromTime, 108) AS FromTimeStr,
+           CONVERT(VARCHAR(8), wb.ToTime, 108)   AS ToTimeStr,
+           CASE WHEN wb.Sound IS NOT NULL AND DATALENGTH(wb.Sound) > 0 THEN 1 ELSE 0 END AS HasSound,
+           CASE WHEN wb.TextToshow IS NOT NULL AND DATALENGTH(wb.TextToshow) > 0 THEN 1 ELSE 0 END AS HasDocument,
+           ISNULL(wbr.ReasonDescription, 'Schimb de tura') AS ReasonDescription,
+           c.CdcDescription,
+           cs.SubCdcDescription
+    FROM Employee.dbo.WorkBreaks wb
+    LEFT JOIN Employee.dbo.Employeers er ON er.EmployeerId = wb.EmployeerId
+    LEFT JOIN Employee.dbo.WorkBreakReasons wbr ON wbr.WorkBreakReasonId = wb.WorkBreakReasonId
+    LEFT JOIN Employee.dbo.WorkBreakData wbd ON wbd.WorkBreakId = wb.WorkBreakId AND wbd.DateOut IS NULL
+    LEFT JOIN Employee.dbo.CostCenters c ON wbd.CdcId = c.CdcId
+    LEFT JOIN Employee.dbo.CdcSub cs ON cs.CdcId = c.CdcId
+    WHERE wb.DateOut IS NULL
+      AND wb.Shift = ?
+    ORDER BY wb.FromTime, wb.ToTime, c.CdcDescription, cs.SubCdcDescription
+    """
+
 
 @app.route('/api/breaks/current')
 def get_current_break():
@@ -328,21 +333,7 @@ def get_current_break():
         return jsonify({"active": False})
 
     try:
-        # Recupera tutte le pause per il turno corrente (senza filtrare per cdc/subcdc
-        # perché vogliamo mostrare TUTTI i reparti coinvolti)
-        query = """
-        SELECT WorkBreakId, IsForChangeShift, Shift,
-               CONVERT(VARCHAR(8), FromTime, 108) as FromTimeStr,
-               CONVERT(VARCHAR(8), ToTime, 108) as ToTimeStr,
-               CASE WHEN TextToshow IS NOT NULL AND DATALENGTH(TextToshow) > 0 THEN 1 ELSE 0 END as has_document,
-               CASE WHEN Sound IS NOT NULL AND DATALENGTH(Sound) > 0 THEN 1 ELSE 0 END as has_sound,
-               IdCdc, IdSubCdc, functionId
-        FROM [Employee].[dbo].[WorkBreaks]
-        WHERE Shift = ?
-          AND (DateOut IS NULL OR DateOut >= CAST(GETDATE() AS DATE))
-          AND (DateIn IS NULL OR DateIn <= CAST(GETDATE() AS DATE))
-        ORDER BY FromTime
-        """
+        query = _break_query()
         cursor = db.connection.cursor()
         cursor.execute(query, (shift,))
         rows = cursor.fetchall()
@@ -350,25 +341,34 @@ def get_current_break():
         now = datetime.now()
         now_secs = now.hour * 3600 + now.minute * 60 + now.second
 
-        # Raggruppa le pause per fascia oraria (FromTime/ToTime)
+        # Raggruppa per fascia oraria (FromTime/ToTime)
         slots = {}
         for row in rows:
             key = (row[3], row[4])  # (FromTimeStr, ToTimeStr)
             if key not in slots:
                 slots[key] = {
-                    "id": row[0],
-                    "is_for_change_shift": row[1],
                     "from_time": row[3],
                     "to_time": row[4],
-                    "has_document": bool(row[5]),
-                    "has_sound": bool(row[6]),
+                    "is_for_change_shift": row[1],
+                    "shift": row[2],
+                    "has_sound": False,
+                    "has_document": False,
+                    "reason": row[7],
                     "departments": []
                 }
-            slots[key]["departments"].append({
-                "id_cdc": row[7],
-                "id_sub_cdc": row[8],
-                "function_id": row[9]
-            })
+            # OR tra tutte le righe dello stesso slot
+            if row[5]:
+                slots[key]["has_sound"] = True
+            if row[6]:
+                slots[key]["has_document"] = True
+
+            # Aggiungi reparto (evita duplicati)
+            cdc = row[8]
+            sub_cdc = row[9]
+            if cdc or sub_cdc:
+                dept = {"cdc": cdc, "sub_cdc": sub_cdc}
+                if dept not in slots[key]["departments"]:
+                    slots[key]["departments"].append(dept)
 
         # Parametri cambio turno
         shift_pre_secs = breaks_config.get("shift_change_pre_seconds", 300)
@@ -379,18 +379,13 @@ def get_current_break():
             p = t.split(':')
             return int(p[0]) * 3600 + int(p[1]) * 60 + int(p[2])
 
-        # Cerca la fascia oraria attiva (include pre-annuncio e post-annuncio)
+        # Cerca la fascia oraria attiva
         for (ft, tt), brk in slots.items():
             from_secs = _time_str_to_secs(ft)
             to_secs = _time_str_to_secs(tt)
 
             if brk["is_for_change_shift"] == 1:
-                # ── CAMBIO TURNO ──
-                # Usa solo FromTime. Ignora ToTime.
-                # Timeline:
-                #   FromTime - 5min  →  FromTime       : shift_pre (orologio + countdown 5min)
-                #   FromTime         →  FromTime + 45s  : shift_announce (reparti + musica)
-                # La musica parte a FromTime-15s e dura 60s (gestita dal frontend)
+                # ── CAMBIO TURNO: usa solo FromTime ──
                 p_start = from_secs - shift_pre_secs
                 p_announce_end = from_secs + (shift_music_dur - shift_music_adv)
 
@@ -414,9 +409,7 @@ def get_current_break():
                         "shift_music_duration": shift_music_dur
                     })
             else:
-                # ── PAUSA NORMALE ──
-                # Timeline a 5 fasi:
-                #   pre_start → announce_start → document → pre_end → announce_end
+                # ── PAUSA NORMALE: 5 fasi ──
                 break_duration = to_secs - from_secs
 
                 p1_start = from_secs - pre_announce
@@ -464,53 +457,85 @@ def get_current_break():
         db.disconnect()
 
 
-@app.route('/api/breaks/<int:break_id>/document')
-def get_break_document(break_id):
-    """Serve il documento (TextToshow varbinary) per una pausa specifica."""
+@app.route('/api/breaks/document')
+def get_break_document():
+    """Serve il documento (TextToshow varbinary) filtrato per FromTime/ToTime/Shift."""
+    from_time = request.args.get('from')
+    to_time = request.args.get('to')
+    shift_param = request.args.get('shift')
+
+    if not from_time or not to_time or not shift_param:
+        return "Parametri mancanti (from, to, shift)", 400
+
     db = _get_db_connection()
     if not db:
         return "Errore di connessione al DB", 500
 
     try:
-        query = "SELECT TextToshow FROM [Employee].[dbo].[WorkBreaks] WHERE WorkBreakId = ?"
+        query = """
+        SELECT TOP 1 TextToshow
+        FROM Employee.dbo.WorkBreaks
+        WHERE CONVERT(VARCHAR(8), FromTime, 108) = ?
+          AND CONVERT(VARCHAR(8), ToTime, 108) = ?
+          AND Shift = ?
+          AND DateOut IS NULL
+          AND TextToshow IS NOT NULL
+          AND DATALENGTH(TextToshow) > 0
+        """
         cursor = db.connection.cursor()
-        cursor.execute(query, (break_id,))
+        cursor.execute(query, (from_time, to_time, int(shift_param)))
         row = cursor.fetchone()
 
-        if row and row[0] and len(row[0]) > 0:
+        if row and row[0]:
             content = row[0]
             mime_type = detect_mime_type(content)
             return Response(content, mimetype=mime_type)
 
         return "Documento non trovato", 404
     except Exception as e:
-        log.error("Errore nel recupero del documento per la pausa %s: %s", break_id, e)
+        log.error("Errore nel recupero del documento: %s", e)
         return "Errore interno", 500
     finally:
         db.disconnect()
 
 
-@app.route('/api/breaks/<int:break_id>/sound')
-def get_break_sound(break_id):
+@app.route('/api/breaks/sound')
+def get_break_sound():
+    """Serve il file audio (Sound varbinary) filtrato per FromTime/ToTime/Shift."""
+    from_time = request.args.get('from')
+    to_time = request.args.get('to')
+    shift_param = request.args.get('shift')
+
+    if not from_time or not to_time or not shift_param:
+        return "Parametri mancanti (from, to, shift)", 400
+
     db = _get_db_connection()
     if not db:
         return "Errore di connessione al DB", 500
 
     try:
-        query = "SELECT Sound FROM [Employee].[dbo].[WorkBreaks] WHERE WorkBreakId = ?"
+        query = """
+        SELECT TOP 1 Sound
+        FROM Employee.dbo.WorkBreaks
+        WHERE CONVERT(VARCHAR(8), FromTime, 108) = ?
+          AND CONVERT(VARCHAR(8), ToTime, 108) = ?
+          AND Shift = ?
+          AND DateOut IS NULL
+          AND Sound IS NOT NULL
+          AND DATALENGTH(Sound) > 0
+        """
         cursor = db.connection.cursor()
-        cursor.execute(query, (break_id,))
+        cursor.execute(query, (from_time, to_time, int(shift_param)))
         row = cursor.fetchone()
 
         if row and row[0]:
             content = row[0]
-            if len(content) > 0:
-                mime_type = detect_mime_type(content)
-                return Response(content, mimetype=mime_type)
+            mime_type = detect_mime_type(content)
+            return Response(content, mimetype=mime_type)
 
-        return "Audio non trovato o non presente", 404
+        return "Audio non trovato", 404
     except Exception as e:
-        log.error("Errore nel recupero dell'audio per la pausa %s: %s", break_id, e)
+        log.error("Errore nel recupero dell'audio: %s", e)
         return "Errore interno", 500
     finally:
         db.disconnect()

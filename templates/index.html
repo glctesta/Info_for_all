@@ -43,37 +43,42 @@
         <div id="phase-clock" class="phase-panel hidden">
             <div class="analog-clock-wrapper">
                 <svg id="analog-clock" viewBox="0 0 300 300" class="analog-clock">
-                    <!-- Quadrante -->
                     <circle cx="150" cy="150" r="145" class="clock-face"/>
                     <circle cx="150" cy="150" r="140" class="clock-inner"/>
-                    <!-- Marcatori ore (generati da JS) -->
                     <g id="clock-markers"></g>
-                    <!-- Lancette -->
                     <line id="hand-hour" class="hand hand-hour" x1="150" y1="150" x2="150" y2="70"/>
                     <line id="hand-minute" class="hand hand-minute" x1="150" y1="150" x2="150" y2="40"/>
                     <line id="hand-second" class="hand hand-second" x1="150" y1="150" x2="150" y2="30"/>
-                    <!-- Centro -->
                     <circle cx="150" cy="150" r="5" class="clock-center"/>
                 </svg>
-                <!-- Countdown sovrapposto al centro dell'orologio -->
                 <div id="clock-countdown" class="clock-countdown">30</div>
             </div>
             <div id="phase-clock-label" class="phase-label">Pausa tra...</div>
         </div>
 
-        <!-- FASE 2 & 5: Reparti/Funzioni + Suono -->
+        <!-- FASE 2 & 5: Reparti/Motivo/Immagine + Suono -->
         <div id="phase-announce" class="phase-panel hidden">
+            <div id="announce-reason-image" class="announce-reason-image"></div>
             <div id="announce-type" class="announce-type"></div>
+            <div id="announce-reason" class="announce-reason"></div>
             <div id="announce-time-range" class="announce-time-range"></div>
-            <div class="announce-section-title">Reparti e Funzioni in pausa</div>
-            <div id="announce-departments" class="announce-departments">
-                <!-- Lista reparti generata da JS -->
-            </div>
+            <div class="announce-section-title">Reparti autorizzati alla pausa</div>
+            <div id="announce-departments" class="announce-departments"></div>
         </div>
 
-        <!-- FASE 3: Documento (TextToshow) -->
+        <!-- FASE 3: Documento (TextToshow) alternato con lista reparti -->
         <div id="phase-document" class="phase-panel hidden">
-            <iframe id="break-document-frame" class="break-document-frame"></iframe>
+            <!-- Vista PDF -->
+            <div id="doc-pdf-view" class="doc-view">
+                <iframe id="break-document-frame" class="break-document-frame"></iframe>
+            </div>
+            <!-- Vista reparti (alternata) -->
+            <div id="doc-dept-view" class="doc-view hidden">
+                <div id="doc-reason-image" class="doc-reason-image-small"></div>
+                <div id="doc-reason-text" class="doc-reason-text"></div>
+                <div class="announce-section-title">Reparti in pausa</div>
+                <div id="doc-departments" class="announce-departments"></div>
+            </div>
         </div>
 
     </div>

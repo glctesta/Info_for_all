@@ -15,13 +15,14 @@ let shiftMusicStarted = false;
 let shiftMusicTimer = null;
 let clockInterval = null;
 let analogClockInterval = null;
-let monitorName = '';   // Nome monitor dal parametro ?monitor=
+let monitorName = '';
+let docAlternateTimer = null;
+let showingDocPdf = true;
 
 // ===================================================================
 //  INITIALIZATION
 // ===================================================================
 async function init() {
-    // Leggi il nome monitor dal parametro URL
     const params = new URLSearchParams(window.location.search);
     monitorName = params.get('monitor') || '';
     console.log('Monitor:', monitorName || '(default)');
@@ -34,7 +35,6 @@ async function init() {
     startBreakChecker();
 }
 
-// Helper: costruisce URL API con parametro monitor
 function apiUrl(path) {
     return monitorName ? path + '?monitor=' + encodeURIComponent(monitorName) : path;
 }
@@ -61,34 +61,25 @@ function buildClockMarkers() {
     const g = document.getElementById('clock-markers');
     if (!g) return;
     const cx = 150, cy = 150;
-
     for (let i = 0; i < 60; i++) {
         const angle = (i * 6 - 90) * Math.PI / 180;
         const isHour = (i % 5 === 0);
-        const outerR = 135;
-        const innerR = isHour ? 120 : 128;
-        const x1 = cx + outerR * Math.cos(angle);
-        const y1 = cy + outerR * Math.sin(angle);
-        const x2 = cx + innerR * Math.cos(angle);
-        const y2 = cy + innerR * Math.sin(angle);
+        const outerR = 135, innerR = isHour ? 120 : 128;
+        const x1 = cx + outerR * Math.cos(angle), y1 = cy + outerR * Math.sin(angle);
+        const x2 = cx + innerR * Math.cos(angle), y2 = cy + innerR * Math.sin(angle);
 
         const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        line.setAttribute('x1', x1);
-        line.setAttribute('y1', y1);
-        line.setAttribute('x2', x2);
-        line.setAttribute('y2', y2);
+        line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+        line.setAttribute('x2', x2); line.setAttribute('y2', y2);
         line.setAttribute('class', isHour ? 'clock-marker-hour' : 'clock-marker-minute');
         g.appendChild(line);
 
-        // Numeri delle ore
         if (isHour) {
             const hourNum = (i / 5) || 12;
             const textR = 108;
-            const tx = cx + textR * Math.cos(angle);
-            const ty = cy + textR * Math.sin(angle);
+            const tx = cx + textR * Math.cos(angle), ty = cy + textR * Math.sin(angle);
             const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            text.setAttribute('x', tx);
-            text.setAttribute('y', ty);
+            text.setAttribute('x', tx); text.setAttribute('y', ty);
             text.setAttribute('class', 'clock-number');
             text.textContent = hourNum;
             g.appendChild(text);
@@ -98,32 +89,19 @@ function buildClockMarkers() {
 
 function updateAnalogClock() {
     const now = new Date();
-    const h = now.getHours() % 12;
-    const m = now.getMinutes();
-    const s = now.getSeconds();
-
-    const hourAngle = (h * 30) + (m * 0.5) - 90;
-    const minuteAngle = (m * 6) + (s * 0.1) - 90;
-    const secondAngle = (s * 6) - 90;
-
+    const h = now.getHours() % 12, m = now.getMinutes(), s = now.getSeconds();
     const cx = 150, cy = 150;
-
-    // Lancetta ore
-    setHand('hand-hour', cx, cy, 60, hourAngle);
-    // Lancetta minuti
-    setHand('hand-minute', cx, cy, 85, minuteAngle);
-    // Lancetta secondi
-    setHand('hand-second', cx, cy, 100, secondAngle);
+    setHand('hand-hour', cx, cy, 60, (h * 30) + (m * 0.5) - 90);
+    setHand('hand-minute', cx, cy, 85, (m * 6) + (s * 0.1) - 90);
+    setHand('hand-second', cx, cy, 100, (s * 6) - 90);
 }
 
 function setHand(id, cx, cy, length, angleDeg) {
     const el = document.getElementById(id);
     if (!el) return;
     const rad = angleDeg * Math.PI / 180;
-    const x2 = cx + length * Math.cos(rad);
-    const y2 = cy + length * Math.sin(rad);
-    el.setAttribute('x2', x2);
-    el.setAttribute('y2', y2);
+    el.setAttribute('x2', cx + length * Math.cos(rad));
+    el.setAttribute('y2', cy + length * Math.sin(rad));
 }
 
 function startAnalogClock() {
@@ -133,14 +111,11 @@ function startAnalogClock() {
 }
 
 function stopAnalogClock() {
-    if (analogClockInterval) {
-        clearInterval(analogClockInterval);
-        analogClockInterval = null;
-    }
+    if (analogClockInterval) { clearInterval(analogClockInterval); analogClockInterval = null; }
 }
 
 // ===================================================================
-//  CONFIG LOADING
+//  CONFIG
 // ===================================================================
 async function loadConfig() {
     try {
@@ -156,16 +131,15 @@ async function loadConfig() {
 }
 
 // ===================================================================
-//  PLAYLIST (monitor URLs + documenti)
+//  PLAYLIST
 // ===================================================================
 async function buildPlaylist() {
     playlist = [];
-
     try {
         const resp = await fetch(apiUrl('/api/monitors'));
         const monitors = await resp.json();
         monitors.forEach(url => playlist.push({ type: 'monitor', url }));
-    } catch (e) { console.error('Errore nel caricamento dei monitor:', e); }
+    } catch (e) { console.error('Errore caricamento monitor:', e); }
 
     try {
         const resp = await fetch('/api/documents');
@@ -173,14 +147,13 @@ async function buildPlaylist() {
         docs.forEach(doc => playlist.push({
             type: 'document', id: doc.id, title: doc.title || 'Documento ' + doc.id
         }));
-    } catch (e) { console.error('Errore nel caricamento dei documenti:', e); }
+    } catch (e) { console.error('Errore caricamento documenti:', e); }
 
     if (playlist.length === 0) {
-        const container = document.getElementById('slide-container');
-        container.innerHTML = '<div class="slide active" style="display:flex;align-items:center;justify-content:center;font-size:24px;color:rgba(255,255,255,0.5);">Nessun contenuto disponibile</div>';
+        document.getElementById('slide-container').innerHTML =
+            '<div class="slide active" style="display:flex;align-items:center;justify-content:center;font-size:24px;color:rgba(255,255,255,0.5);">Nessun contenuto disponibile</div>';
         return;
     }
-
     createSlides();
     createNavDots();
     showSlide(0);
@@ -192,12 +165,10 @@ async function buildPlaylist() {
 function createSlides() {
     const container = document.getElementById('slide-container');
     container.innerHTML = '';
-
     playlist.forEach((item, i) => {
         const slide = document.createElement('div');
         slide.className = 'slide';
         slide.dataset.index = i;
-
         const iframe = document.createElement('iframe');
         if (item.type === 'monitor') {
             iframe.src = item.url;
@@ -226,7 +197,6 @@ function showSlide(index) {
     if (playlist.length === 0) return;
     const slides = document.querySelectorAll('.slide');
     const dots = document.querySelectorAll('.nav-dot');
-
     slides.forEach(s => {
         if (s.classList.contains('active')) {
             s.classList.remove('active');
@@ -235,7 +205,6 @@ function showSlide(index) {
             setTimeout(() => s.classList.remove('exiting'), dur);
         }
     });
-
     currentIndex = index;
     if (slides[currentIndex]) slides[currentIndex].classList.add('active');
     dots.forEach((d, i) => d.classList.toggle('active', i === currentIndex));
@@ -252,20 +221,15 @@ function goToSlide(index) {
 // ===================================================================
 //  ROTATION
 // ===================================================================
-function startRotation() {
-    if (playlist.length <= 1) return;
-    scheduleNextSlide();
-}
+function startRotation() { if (playlist.length <= 1) return; scheduleNextSlide(); }
 
 function scheduleNextSlide() {
     clearTimeout(rotationTimer);
     if (isBreakActive) return;
-
     const item = playlist[currentIndex];
     const interval = (item && item.type === 'monitor')
         ? (config.rotation?.monitor_interval_seconds || 300) * 1000
         : (config.rotation?.slideshow_interval_seconds || 10) * 1000;
-
     rotationTimer = setTimeout(() => {
         showSlide((currentIndex + 1) % playlist.length);
         scheduleNextSlide();
@@ -278,33 +242,20 @@ function scheduleNextSlide() {
 function startProgressBar() {
     const bar = document.getElementById('progress-bar');
     if (!bar) return;
-
     const item = playlist[currentIndex];
     const interval = (item && item.type === 'monitor')
         ? (config.rotation?.monitor_interval_seconds || 300) * 1000
         : (config.rotation?.slideshow_interval_seconds || 10) * 1000;
-
     bar.style.transition = 'none';
     bar.style.width = '0%';
-    bar.offsetHeight; // forza reflow
+    bar.offsetHeight;
     bar.style.transition = 'width ' + interval + 'ms linear';
     bar.style.width = '100%';
 }
 
 // ===================================================================
-//  BREAK CHECKER — Sistema a 5 fasi
+//  BREAK CHECKER — Sistema a 5 fasi + cambio turno
 // ===================================================================
-//
-//  Timeline di una pausa:
-//  ─────────────────────────────────────────────────────────────
-//  FromTime-30s    FromTime    FromTime+30s     ToTime-30s    ToTime    ToTime+30s
-//       │             │             │               │           │           │
-//       ├─ PRE_START ─┤─ ANNOUNCE  ─┤── DOCUMENT ──┤─ PRE_END ─┤─ ANNOUNCE ┤
-//       │  Orologio + │  Reparti + │  Documento    │  Orologio+│  Reparti +│
-//       │  countdown  │  suono     │  TextToshow   │  countdown│  suono    │
-//       ─────────────────────────────────────────────────────────────────────
-//
-
 function startBreakChecker() {
     const checkInterval = (config.breaks?.check_interval_seconds || 5) * 1000;
     checkBreak();
@@ -315,29 +266,21 @@ async function checkBreak() {
     try {
         const resp = await fetch('/api/breaks/current');
         const data = await resp.json();
-
         if (data.active) {
-            if (!isBreakActive) {
-                activateBreak(data);
-            } else {
-                updateBreakPhase(data);
-            }
+            if (!isBreakActive) activateBreak(data);
+            else updateBreakPhase(data);
         } else if (isBreakActive) {
             deactivateBreak();
         }
-    } catch (e) {
-        console.error('Errore nel controllo delle pause:', e);
-    }
+    } catch (e) { console.error('Errore controllo pause:', e); }
 }
 
 function activateBreak(data) {
     isBreakActive = true;
     clearTimeout(rotationTimer);
-
     const overlay = document.getElementById('break-overlay');
     overlay.classList.remove('hidden', 'hiding');
     overlay.classList.add('showing');
-
     showPhase(data);
 }
 
@@ -345,42 +288,30 @@ function deactivateBreak() {
     isBreakActive = false;
     currentPhase = null;
     shiftMusicStarted = false;
-
-    if (shiftMusicTimer) {
-        clearTimeout(shiftMusicTimer);
-        shiftMusicTimer = null;
-    }
-
+    if (shiftMusicTimer) { clearTimeout(shiftMusicTimer); shiftMusicTimer = null; }
+    if (docAlternateTimer) { clearInterval(docAlternateTimer); docAlternateTimer = null; }
     stopAnalogClock();
     stopBreakSound();
 
     const overlay = document.getElementById('break-overlay');
     overlay.classList.remove('showing');
     overlay.classList.add('hiding');
-    setTimeout(() => {
-        overlay.classList.add('hidden');
-        overlay.classList.remove('hiding');
-        hideAllPhases();
-    }, 500);
-
+    setTimeout(() => { overlay.classList.add('hidden'); overlay.classList.remove('hiding'); hideAllPhases(); }, 500);
     scheduleNextSlide();
 }
 
 function updateBreakPhase(data) {
-    // Se la fase è cambiata, aggiorna la visualizzazione
     if (data.phase !== currentPhase) {
         showPhase(data);
     } else {
-        // Aggiorna solo il countdown
         if (data.phase === 'pre_start' || data.phase === 'pre_end') {
             updateClockCountdown(data.countdown);
         } else if (data.phase === 'shift_pre') {
             updateClockCountdown(data.countdown);
-            // Avvia musica quando mancano N secondi (shift_music_advance)
             const musicAdv = data.shift_music_advance || 15;
             if (data.countdown <= musicAdv && !shiftMusicStarted && data.break.has_sound) {
                 shiftMusicStarted = true;
-                playShiftChangeSound(data.break.id, (data.shift_music_duration || 60) * 1000);
+                playShiftChangeSound(data.break, (data.shift_music_duration || 60) * 1000);
             }
         }
     }
@@ -396,53 +327,67 @@ function showPhase(data) {
     const brk = data.break;
     currentPhase = data.phase;
     hideAllPhases();
+    if (docAlternateTimer) { clearInterval(docAlternateTimer); docAlternateTimer = null; }
 
     switch (data.phase) {
-        // ── Pause normali (5 fasi) ──
-        case 'pre_start':
-            showPhasePreStart(data.countdown);
-            break;
-        case 'announce_start':
-            showPhaseAnnounce(brk, 'inizio');
-            break;
-        case 'document':
-            showPhaseDocument(brk);
-            break;
-        case 'pre_end':
-            showPhasePreEnd(data.countdown);
-            break;
-        case 'announce_end':
-            showPhaseAnnounce(brk, 'fine');
-            break;
-
-        // ── Cambio turno (2 fasi) ──
-        case 'shift_pre':
-            showPhaseShiftPre(data);
-            break;
-        case 'shift_announce':
-            showPhaseShiftAnnounce(data);
-            break;
+        case 'pre_start':    showPhaseClock(data.countdown, 'Pausa tra...'); break;
+        case 'announce_start': showPhaseAnnounce(brk, 'inizio'); break;
+        case 'document':     showPhaseDocument(brk); break;
+        case 'pre_end':      showPhaseClock(data.countdown, 'Fine pausa tra...'); break;
+        case 'announce_end': showPhaseAnnounce(brk, 'fine'); break;
+        case 'shift_pre':    showPhaseShiftPre(data); break;
+        case 'shift_announce': showPhaseShiftAnnounce(data); break;
     }
 }
 
-// --- FASE 1: PRE_START (orologio + countdown) ---
-function showPhasePreStart(countdown) {
-    stopBreakSound();
-    const panel = document.getElementById('phase-clock');
-    panel.classList.remove('hidden');
+// ===================================================================
+//  REASON HELPERS
+// ===================================================================
 
-    document.getElementById('phase-clock-label').textContent = 'Pausa tra...';
-    updateClockCountdown(countdown);
-    startAnalogClock();
+function getReasonEmoji(reason) {
+    const r = (reason || '').toLowerCase();
+    if (r.includes('pran') || r.includes('masa') || r.includes('lunch') || r.includes('mensa'))
+        return '🍽️';
+    if (r.includes('sigar') || r.includes('fumar') || r.includes('tigar') || r.includes('smok'))
+        return '🚬';
+    if (r.includes('schimb') || r.includes('turno') || r.includes('shift'))
+        return '🔄';
+    return '☕';
 }
 
-// --- FASE 4: PRE_END (orologio + countdown) ---
-function showPhasePreEnd(countdown) {
+function getReasonMessage(reason) {
+    const r = (reason || '').toLowerCase();
+    if (r.includes('pran') || r.includes('masa') || r.includes('lunch') || r.includes('mensa'))
+        return '<div class="reason-fun reason-lunch">🍝 Buon appetito a tutti! 🍕</div>';
+    if (r.includes('sigar') || r.includes('fumar') || r.includes('tigar') || r.includes('smok'))
+        return '<div class="reason-fun reason-smoke">' +
+            '<div class="smoke-warning">🚭</div>' +
+            '<div class="smoke-msg">Lo sapevi? Ogni sigaretta in meno è un regalo alla tua salute!</div>' +
+            '<div class="smoke-sub">Il tuo corpo inizia a rigenerarsi dopo sole 20 minuti dall\'ultima sigaretta.</div>' +
+            '</div>';
+    return '';
+}
+
+function buildSoundUrl(brk) {
+    return '/api/breaks/sound?from=' + encodeURIComponent(brk.from_time)
+         + '&to=' + encodeURIComponent(brk.to_time)
+         + '&shift=' + encodeURIComponent(brk.shift);
+}
+
+function buildDocUrl(brk) {
+    return '/api/breaks/document?from=' + encodeURIComponent(brk.from_time)
+         + '&to=' + encodeURIComponent(brk.to_time)
+         + '&shift=' + encodeURIComponent(brk.shift);
+}
+
+// ===================================================================
+//  FASE 1 & 4: OROLOGIO + COUNTDOWN
+// ===================================================================
+function showPhaseClock(countdown, label) {
     stopBreakSound();
     const panel = document.getElementById('phase-clock');
     panel.classList.remove('hidden');
-
-    document.getElementById('phase-clock-label').textContent = 'Fine pausa tra...';
+    document.getElementById('phase-clock-label').textContent = label;
     updateClockCountdown(countdown);
     startAnalogClock();
 }
@@ -452,179 +397,175 @@ function updateClockCountdown(seconds) {
     if (el) el.textContent = Math.max(0, Math.ceil(seconds));
 }
 
-// --- FASE 2 & 5: ANNUNCIO (reparti + suono) ---
+// ===================================================================
+//  FASE 2 & 5: ANNUNCIO (reparti + motivo + immagine + suono)
+// ===================================================================
 function showPhaseAnnounce(brk, moment) {
     stopAnalogClock();
     const panel = document.getElementById('phase-announce');
     panel.classList.remove('hidden');
 
+    // Immagine/emoji del motivo
+    const imgEl = document.getElementById('announce-reason-image');
+    imgEl.innerHTML = '<span class="reason-emoji">' + getReasonEmoji(brk.reason) + '</span>';
+
     // Tipo pausa
     const typeEl = document.getElementById('announce-type');
-    if (brk.is_for_change_shift === 1) {
-        typeEl.textContent = config.breaks?.shift_change_label || '🔄 Cambio Turno';
-    } else {
-        typeEl.textContent = config.breaks?.smoking_break_label || '🚬 Pausa Sigaretta';
-    }
+    typeEl.textContent = brk.reason || 'Pausa';
+
+    // Messaggio simpatico sotto il motivo
+    const reasonEl = document.getElementById('announce-reason');
+    reasonEl.innerHTML = getReasonMessage(brk.reason);
 
     // Fascia oraria
     document.getElementById('announce-time-range').textContent =
         brk.from_time + ' → ' + brk.to_time;
 
-    // Reparti / sotto-reparti / funzioni
-    const deptContainer = document.getElementById('announce-departments');
-    deptContainer.innerHTML = '';
-
-    if (brk.departments && brk.departments.length > 0) {
-        brk.departments.forEach(dept => {
-            const card = document.createElement('div');
-            card.className = 'dept-card';
-
-            let html = '';
-            if (dept.id_cdc !== null && dept.id_cdc !== undefined) {
-                html += '<div class="dept-label">Reparto</div>';
-                html += '<div class="dept-value">' + escapeHtml(String(dept.id_cdc)) + '</div>';
-            }
-            if (dept.id_sub_cdc !== null && dept.id_sub_cdc !== undefined) {
-                html += '<div class="dept-label">Sotto-Reparto</div>';
-                html += '<div class="dept-value">' + escapeHtml(String(dept.id_sub_cdc)) + '</div>';
-            }
-            if (dept.function_id !== null && dept.function_id !== undefined) {
-                html += '<div class="dept-label">Funzione</div>';
-                html += '<div class="dept-value">' + escapeHtml(String(dept.function_id)) + '</div>';
-            }
-
-            card.innerHTML = html;
-            deptContainer.appendChild(card);
-        });
-    }
+    // Reparti
+    buildDepartmentCards('announce-departments', brk.departments);
 
     // Suono
     if (brk.has_sound) {
-        playBreakSound(brk.id);
+        playBreakSound(brk);
     }
 }
 
-// --- FASE 3: DOCUMENTO (TextToshow iframe) ---
+// ===================================================================
+//  FASE 3: DOCUMENTO alternato con REPARTI
+// ===================================================================
 function showPhaseDocument(brk) {
     stopAnalogClock();
     stopBreakSound();
     const panel = document.getElementById('phase-document');
     panel.classList.remove('hidden');
 
+    const pdfView = document.getElementById('doc-pdf-view');
+    const deptView = document.getElementById('doc-dept-view');
+
+    // Prepara vista PDF
     const iframe = document.getElementById('break-document-frame');
     if (brk.has_document) {
-        iframe.src = '/api/breaks/' + brk.id + '/document';
+        iframe.src = buildDocUrl(brk);
     } else {
-        // Se non c'è documento, mostra un messaggio
         iframe.srcdoc = '<html><body style="display:flex;align-items:center;justify-content:center;height:100%;margin:0;background:#1a1a2e;color:white;font-family:Segoe UI,sans-serif;font-size:24px;">Pausa in corso</body></html>';
     }
+
+    // Prepara vista reparti alternata
+    const reasonImg = document.getElementById('doc-reason-image');
+    reasonImg.innerHTML = '<span class="reason-emoji-sm">' + getReasonEmoji(brk.reason) + '</span>';
+    const reasonText = document.getElementById('doc-reason-text');
+    reasonText.innerHTML = '<div class="doc-reason-title">' + escapeHtml(brk.reason || 'Pausa') + '</div>'
+                         + getReasonMessage(brk.reason);
+    buildDepartmentCards('doc-departments', brk.departments);
+
+    // Mostra prima il PDF
+    showingDocPdf = true;
+    pdfView.classList.remove('hidden');
+    deptView.classList.add('hidden');
+
+    // Alterna ogni 10 secondi tra PDF e lista reparti
+    docAlternateTimer = setInterval(() => {
+        showingDocPdf = !showingDocPdf;
+        if (showingDocPdf) {
+            pdfView.classList.remove('hidden');
+            deptView.classList.add('hidden');
+        } else {
+            pdfView.classList.add('hidden');
+            deptView.classList.remove('hidden');
+        }
+    }, 10000);
 }
 
-// --- Cambio Turno: FASE shift_pre (orologio + countdown 5min + musica a -15s) ---
+// ===================================================================
+//  CAMBIO TURNO
+// ===================================================================
 function showPhaseShiftPre(data) {
     const panel = document.getElementById('phase-clock');
     panel.classList.remove('hidden');
-
     document.getElementById('phase-clock-label').textContent = 'Cambio turno tra...';
     updateClockCountdown(data.countdown);
     startAnalogClock();
 
-    // Avvia musica se mancano <= shift_music_advance secondi
     const musicAdv = data.shift_music_advance || 15;
     if (data.countdown <= musicAdv && !shiftMusicStarted && data.break.has_sound) {
         shiftMusicStarted = true;
-        playShiftChangeSound(data.break.id, (data.shift_music_duration || 60) * 1000);
+        playShiftChangeSound(data.break, (data.shift_music_duration || 60) * 1000);
     }
 }
 
-// --- Cambio Turno: FASE shift_announce (reparti + musica continua) ---
 function showPhaseShiftAnnounce(data) {
     stopAnalogClock();
     const brk = data.break;
     const panel = document.getElementById('phase-announce');
     panel.classList.remove('hidden');
 
-    // Tipo
+    document.getElementById('announce-reason-image').innerHTML =
+        '<span class="reason-emoji">🔄</span>';
     document.getElementById('announce-type').textContent =
-        config.breaks?.shift_change_label || '🔄 Cambio Turno';
+        brk.reason || config.breaks?.shift_change_label || 'Cambio Turno';
+    document.getElementById('announce-reason').innerHTML = '';
+    document.getElementById('announce-time-range').textContent = 'Ore ' + brk.from_time;
+    buildDepartmentCards('announce-departments', brk.departments);
 
-    // Orario
-    document.getElementById('announce-time-range').textContent =
-        'Ore ' + brk.from_time;
-
-    // Reparti
-    const deptContainer = document.getElementById('announce-departments');
-    deptContainer.innerHTML = '';
-    if (brk.departments && brk.departments.length > 0) {
-        brk.departments.forEach(dept => {
-            const card = document.createElement('div');
-            card.className = 'dept-card';
-            let html = '';
-            if (dept.id_cdc !== null && dept.id_cdc !== undefined) {
-                html += '<div class="dept-label">Reparto</div>';
-                html += '<div class="dept-value">' + escapeHtml(String(dept.id_cdc)) + '</div>';
-            }
-            if (dept.id_sub_cdc !== null && dept.id_sub_cdc !== undefined) {
-                html += '<div class="dept-label">Sotto-Reparto</div>';
-                html += '<div class="dept-value">' + escapeHtml(String(dept.id_sub_cdc)) + '</div>';
-            }
-            if (dept.function_id !== null && dept.function_id !== undefined) {
-                html += '<div class="dept-label">Funzione</div>';
-                html += '<div class="dept-value">' + escapeHtml(String(dept.function_id)) + '</div>';
-            }
-            card.innerHTML = html;
-            deptContainer.appendChild(card);
-        });
-    }
-
-    // La musica dovrebbe già essere partita da shift_pre;
-    // se non è partita (es. entrata diretta in questa fase), avviala
     if (!shiftMusicStarted && brk.has_sound) {
         shiftMusicStarted = true;
-        playShiftChangeSound(brk.id, (data.shift_music_duration || 60) * 1000);
+        playShiftChangeSound(brk, (data.shift_music_duration || 60) * 1000);
     }
+}
+
+// ===================================================================
+//  DEPARTMENT CARDS
+// ===================================================================
+function buildDepartmentCards(containerId, departments) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = '';
+    if (!departments || departments.length === 0) return;
+
+    departments.forEach(dept => {
+        const card = document.createElement('div');
+        card.className = 'dept-card';
+        let html = '';
+        if (dept.cdc) {
+            html += '<div class="dept-label">Reparto</div>';
+            html += '<div class="dept-value">' + escapeHtml(String(dept.cdc)) + '</div>';
+        }
+        if (dept.sub_cdc) {
+            html += '<div class="dept-label">Sotto-Reparto</div>';
+            html += '<div class="dept-value">' + escapeHtml(String(dept.sub_cdc)) + '</div>';
+        }
+        if (html) {
+            card.innerHTML = html;
+            container.appendChild(card);
+        }
+    });
 }
 
 // ===================================================================
 //  AUDIO
 // ===================================================================
-function playBreakSound(breakId) {
+function playBreakSound(brk) {
     stopBreakSound();
     try {
-        breakAudio = new Audio('/api/breaks/' + breakId + '/sound');
+        breakAudio = new Audio(buildSoundUrl(brk));
         breakAudio.play().catch(e => console.warn('Impossibile riprodurre audio:', e));
-    } catch (e) {
-        console.error('Errore riproduzione audio:', e);
-    }
+    } catch (e) { console.error('Errore riproduzione audio:', e); }
 }
 
-function playShiftChangeSound(breakId, durationMs) {
+function playShiftChangeSound(brk, durationMs) {
     stopBreakSound();
     try {
-        breakAudio = new Audio('/api/breaks/' + breakId + '/sound');
-        breakAudio.loop = true;  // Ripeti se il brano è troppo corto
+        breakAudio = new Audio(buildSoundUrl(brk));
+        breakAudio.loop = true;
         breakAudio.play().catch(e => console.warn('Impossibile riprodurre audio:', e));
-
-        // Ferma dopo la durata configurata (default 60s)
         shiftMusicTimer = setTimeout(() => {
-            if (breakAudio) {
-                breakAudio.loop = false;
-                breakAudio.pause();
-                breakAudio = null;
-            }
+            if (breakAudio) { breakAudio.loop = false; breakAudio.pause(); breakAudio = null; }
             shiftMusicTimer = null;
         }, durationMs);
-    } catch (e) {
-        console.error('Errore riproduzione audio cambio turno:', e);
-    }
+    } catch (e) { console.error('Errore riproduzione audio cambio turno:', e); }
 }
 
 function stopBreakSound() {
-    if (breakAudio) {
-        breakAudio.pause();
-        breakAudio.currentTime = 0;
-        breakAudio = null;
-    }
+    if (breakAudio) { breakAudio.pause(); breakAudio.currentTime = 0; breakAudio = null; }
 }
 
 // ===================================================================
