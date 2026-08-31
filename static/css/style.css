@@ -228,6 +228,18 @@ body { background-color: #1a1a2e; color: white; }
 
 .announce-reason { margin-bottom: 15px; }
 
+.shift-all-staff {
+    font-size: 22px;
+    color: rgba(255, 255, 255, 0.75);
+    font-style: italic;
+    line-height: 1.6;
+    padding: 15px 30px;
+    border: 1px solid rgba(233, 69, 96, 0.25);
+    border-radius: 12px;
+    background: rgba(233, 69, 96, 0.06);
+    animation: reasonPopIn 0.6s ease-out;
+}
+
 /* Messaggi simpatici per pranzo / sigaretta */
 .reason-fun {
     padding: 15px 30px;

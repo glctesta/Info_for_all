@@ -542,9 +542,13 @@ function showPhaseShiftAnnounce(data) {
         '<span class="reason-emoji">🔄</span>';
     document.getElementById('announce-type').textContent =
         brk.reason || config.breaks?.shift_change_label || 'Schimb de Tură';
-    document.getElementById('announce-reason').innerHTML = '';
+    document.getElementById('announce-reason').innerHTML =
+        '<div class="shift-all-staff">Toți operatorii, tehnicienii, șefii de tură, șefii de linie,<br>producția, calitatea, magazinul și mentenanța</div>';
     document.getElementById('announce-time-range').textContent = 'Ora ' + brk.from_time;
-    buildDepartmentCards('announce-departments', brk.departments);
+
+    // Cambio turno: nessuna lista reparti (riguarda tutti)
+    document.getElementById('announce-departments').innerHTML = '';
+    document.querySelector('#phase-announce .announce-section-title').textContent = '';
 
     if (!shiftMusicStarted && brk.has_sound) {
         shiftMusicStarted = true;
