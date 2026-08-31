@@ -306,12 +306,61 @@ async function checkBreak() {
     } catch (e) { console.error('Errore controllo pause:', e); }
 }
 
+const OVERLAY_EFFECTS = ['anim-fade', 'anim-zoom', 'anim-blur', 'anim-slide', 'anim-rotate', 'anim-curtain', 'anim-diamond', 'anim-puzzle'];
+let currentOverlayEffect = '';
+
+function pickRandomEffect() {
+    return OVERLAY_EFFECTS[Math.floor(Math.random() * OVERLAY_EFFECTS.length)];
+}
+
+function clearOverlayEffects(overlay) {
+    OVERLAY_EFFECTS.forEach(cls => overlay.classList.remove(cls));
+    overlay.classList.remove('showing', 'hiding');
+    // Rimuovi griglia puzzle se presente
+    const grid = overlay.querySelector('.puzzle-grid');
+    if (grid) grid.remove();
+}
+
+function createPuzzleGrid(overlay) {
+    const grid = document.createElement('div');
+    grid.className = 'puzzle-grid';
+    const cols = 5, rows = 4;
+    const totalTiles = cols * rows;
+    // Ordine casuale per lo stagger
+    const indices = Array.from({length: totalTiles}, (_, i) => i);
+    for (let i = indices.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [indices[i], indices[j]] = [indices[j], indices[i]];
+    }
+    for (let i = 0; i < totalTiles; i++) {
+        const tile = document.createElement('div');
+        tile.className = 'puzzle-tile';
+        const delay = indices.indexOf(i) * 60; // stagger casuale
+        tile.style.animationDelay = delay + 'ms';
+        grid.appendChild(tile);
+    }
+    overlay.appendChild(grid);
+    // Rimuovi la griglia dopo l'animazione
+    setTimeout(() => grid.remove(), totalTiles * 60 + 600);
+}
+
 function activateBreak(data) {
     isBreakActive = true;
     clearTimeout(rotationTimer);
     const overlay = document.getElementById('break-overlay');
-    overlay.classList.remove('hidden', 'hiding');
-    overlay.classList.add('showing');
+    clearOverlayEffects(overlay);
+    overlay.classList.remove('hidden');
+
+    currentOverlayEffect = pickRandomEffect();
+    console.log('Effetto transizione:', currentOverlayEffect);
+
+    if (currentOverlayEffect === 'anim-puzzle') {
+        overlay.classList.add('anim-fade'); // fade base per il contenuto
+        createPuzzleGrid(overlay);
+    } else {
+        overlay.classList.add(currentOverlayEffect);
+    }
+
     showPhase(data);
 }
 
@@ -325,9 +374,13 @@ function deactivateBreak() {
     stopBreakSound();
 
     const overlay = document.getElementById('break-overlay');
-    overlay.classList.remove('showing');
+    clearOverlayEffects(overlay);
     overlay.classList.add('hiding');
-    setTimeout(() => { overlay.classList.add('hidden'); overlay.classList.remove('hiding'); hideAllPhases(); }, 500);
+    setTimeout(() => {
+        overlay.classList.add('hidden');
+        clearOverlayEffects(overlay);
+        hideAllPhases();
+    }, 600);
     scheduleNextSlide();
 }
 
