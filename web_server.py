@@ -389,7 +389,10 @@ def get_current_break():
 
         def _time_str_to_secs(t):
             p = t.split(':')
-            return int(p[0]) * 3600 + int(p[1]) * 60 + int(p[2])
+            h = int(p[0]) if len(p) > 0 else 0
+            m = int(p[1]) if len(p) > 1 else 0
+            s = int(p[2]) if len(p) > 2 else 0
+            return h * 3600 + m * 60 + s
 
         # Cerca la fascia oraria attiva
         for (ft, tt), brk in slots.items():
