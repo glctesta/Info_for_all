@@ -338,22 +338,34 @@ def get_current_break():
         cursor.execute(query, (shift,))
         rows = cursor.fetchall()
 
+        # Debug: log colonne restituiti
+        if rows:
+            col_names = [desc[0] for desc in cursor.description] if cursor.description else []
+            log.info("Query pause: %d righe, %d colonne: %s", len(rows), len(col_names), col_names)
+
         now = datetime.now()
         now_secs = now.hour * 3600 + now.minute * 60 + now.second
 
         # Raggruppa per fascia oraria (FromTime/ToTime)
         slots = {}
         for row in rows:
-            key = (row[3], row[4])  # (FromTimeStr, ToTimeStr)
+            ncols = len(row)
+            if ncols < 8:
+                log.warning("Riga pausa con solo %d colonne (attese 10): %s", ncols, list(row))
+                continue
+
+            from_t = row[3]
+            to_t = row[4]
+            key = (from_t, to_t)
             if key not in slots:
                 slots[key] = {
-                    "from_time": row[3],
-                    "to_time": row[4],
+                    "from_time": from_t,
+                    "to_time": to_t,
                     "is_for_change_shift": row[1],
                     "shift": row[2],
                     "has_sound": False,
                     "has_document": False,
-                    "reason": row[7],
+                    "reason": row[7] if ncols > 7 else None,
                     "departments": []
                 }
             # OR tra tutte le righe dello stesso slot
@@ -363,8 +375,8 @@ def get_current_break():
                 slots[key]["has_document"] = True
 
             # Aggiungi reparto (evita duplicati)
-            cdc = row[8]
-            sub_cdc = row[9]
+            cdc = row[8] if ncols > 8 else None
+            sub_cdc = row[9] if ncols > 9 else None
             if cdc or sub_cdc:
                 dept = {"cdc": cdc, "sub_cdc": sub_cdc}
                 if dept not in slots[key]["departments"]:
