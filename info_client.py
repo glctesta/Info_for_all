@@ -219,9 +219,28 @@ def create_kiosk_browser(target_monitor, browser='chrome'):
 #  Main
 # ===================================================================
 
+STOP_FILE = os.path.join(APP_DIR, 'STOP')
+
+
+def check_stop_requested():
+    """Verifica se è stato richiesto lo stop (file STOP nella cartella)."""
+    return os.path.exists(STOP_FILE)
+
+
+def cleanup_stop_file():
+    """Rimuove il file STOP se esiste (all'avvio)."""
+    if os.path.exists(STOP_FILE):
+        try:
+            os.remove(STOP_FILE)
+            log.info("File STOP rimosso.")
+        except Exception:
+            pass
+
+
 def main():
     _setup_logging()
     config = load_config()
+    cleanup_stop_file()
 
     server_url = config.get("server_url", "http://127.0.0.1:5100")
     monitor_name = config.get("monitor_name", "DEFAULT")
@@ -234,6 +253,7 @@ def main():
     log.info("Info For All — Client v%s", local_version)
     log.info("Server: %s | Monitor: %s | Browser: %s",
              server_url, monitor_name, browser_type)
+    log.info("Per fermare il client: creare un file 'STOP' in %s", APP_DIR)
     log.info("=" * 60)
 
     # Controlla aggiornamenti prima di avviare
@@ -244,6 +264,9 @@ def main():
     # Attendi che il server sia raggiungibile
     log.info("Attendo connessione al server...")
     for attempt in range(60):
+        if check_stop_requested():
+            log.info("Stop richiesto durante l'attesa del server.")
+            return
         try:
             urllib.request.urlopen(f"{server_url}/api/client/version", timeout=5)
             log.info("Server raggiungibile.")
@@ -270,7 +293,7 @@ def main():
     except Exception as e:
         log.error("Errore di navigazione: %s", e)
 
-    # Loop principale: heartbeat + controllo aggiornamenti
+    # Loop principale: heartbeat + controllo aggiornamenti + controllo stop
     running = True
     def sig_handler(sig, frame):
         nonlocal running
@@ -283,6 +306,11 @@ def main():
     try:
         while running:
             time.sleep(5)
+
+            # Controllo file STOP
+            if check_stop_requested():
+                log.info("File STOP rilevato. Chiusura in corso...")
+                break
 
             # Verifica browser ancora attivo
             try:
@@ -311,6 +339,7 @@ def main():
             log.info("Browser chiuso.")
         except Exception:
             pass
+        cleanup_stop_file()
         log.info("Client terminato.")
 
 
