@@ -81,10 +81,64 @@ body { background-color: #1a1a2e; color: white; }
 /* ============================== */
 .break-overlay {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0, 0, 0, 0.94);
+    background: linear-gradient(-45deg, #0a0a2e, #1a0a2e, #0a1a3e, #1a0a1e, #0a2a3e);
+    background-size: 400% 400%;
+    animation: gradientShift 12s ease infinite;
     z-index: 9999;
     display: flex; align-items: center; justify-content: center;
     overflow: hidden;
+}
+@keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    25% { background-position: 100% 0%; }
+    50% { background-position: 100% 100%; }
+    75% { background-position: 0% 100%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* Particelle bokeh */
+.break-overlay::before,
+.break-overlay::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    opacity: 0.15;
+}
+.break-overlay::before {
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, #e94560 0%, transparent 70%);
+    top: -10%; right: -5%;
+    animation: floatBokeh1 8s ease-in-out infinite;
+}
+.break-overlay::after {
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, #4a90d9 0%, transparent 70%);
+    bottom: -10%; left: -5%;
+    animation: floatBokeh2 10s ease-in-out infinite;
+}
+@keyframes floatBokeh1 {
+    0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.15; }
+    50% { transform: translate(-80px, 60px) scale(1.2); opacity: 0.25; }
+}
+@keyframes floatBokeh2 {
+    0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.12; }
+    50% { transform: translate(60px, -80px) scale(1.3); opacity: 0.22; }
+}
+
+/* Particelle flottanti extra */
+.particle {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    opacity: 0;
+    animation: particleFloat linear infinite;
+}
+@keyframes particleFloat {
+    0% { transform: translateY(100vh) scale(0); opacity: 0; }
+    10% { opacity: 0.6; }
+    90% { opacity: 0.3; }
+    100% { transform: translateY(-20vh) scale(1); opacity: 0; }
 }
 .break-overlay.hidden { display: none; }
 .break-overlay.hiding { animation: overlayFadeOut 0.6s ease-in forwards; }
@@ -175,43 +229,85 @@ body { background-color: #1a1a2e; color: white; }
 /* ============================== */
 .analog-clock-wrapper {
     position: relative;
-    width: 400px; height: 400px;
+    width: 420px; height: 420px;
 }
+/* Anello pulsante esterno */
+.analog-clock-wrapper::before {
+    content: '';
+    position: absolute;
+    top: -15px; left: -15px; right: -15px; bottom: -15px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    background: conic-gradient(from 0deg, #e94560, #4a90d9, #fbbf24, #22d3ee, #e94560) border-box;
+    -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    animation: ringRotate 4s linear infinite, ringPulse 2s ease-in-out infinite;
+    opacity: 0.7;
+}
+@keyframes ringRotate {
+    to { transform: rotate(360deg); }
+}
+@keyframes ringPulse {
+    0%, 100% { opacity: 0.5; filter: blur(0px); }
+    50% { opacity: 0.9; filter: blur(2px); }
+}
+/* Alone luminoso dietro l'orologio */
+.analog-clock-wrapper::after {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 300px; height: 300px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(233, 69, 96, 0.15) 0%, transparent 70%);
+    animation: haloBreath 3s ease-in-out infinite;
+    pointer-events: none;
+}
+@keyframes haloBreath {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
+    50% { transform: translate(-50%, -50%) scale(1.3); opacity: 0.8; }
+}
+
 .analog-clock {
     width: 100%; height: 100%;
-    filter: drop-shadow(0 0 30px rgba(233, 69, 96, 0.3));
+    filter: drop-shadow(0 0 40px rgba(233, 69, 96, 0.4));
+    position: relative;
+    z-index: 2;
 }
 .clock-face {
     fill: none;
     stroke: #e94560;
     stroke-width: 3;
+    filter: drop-shadow(0 0 8px rgba(233, 69, 96, 0.5));
 }
 .clock-inner {
-    fill: rgba(26, 26, 46, 0.9);
-    stroke: rgba(233, 69, 96, 0.2);
+    fill: rgba(15, 15, 40, 0.92);
+    stroke: rgba(233, 69, 96, 0.15);
     stroke-width: 1;
 }
 .hand {
     stroke-linecap: round;
+    transition: all 0.3s ease;
 }
 .hand-hour {
-    stroke: #ffffff;
+    stroke: #e0e0e0;
     stroke-width: 5;
-    filter: drop-shadow(0 0 3px rgba(255,255,255,0.5));
+    filter: drop-shadow(0 0 5px rgba(255,255,255,0.6));
 }
 .hand-minute {
-    stroke: #ffffff;
+    stroke: #e0e0e0;
     stroke-width: 3.5;
-    filter: drop-shadow(0 0 3px rgba(255,255,255,0.4));
+    filter: drop-shadow(0 0 4px rgba(255,255,255,0.4));
 }
 .hand-second {
     stroke: #e94560;
     stroke-width: 2;
-    filter: drop-shadow(0 0 4px rgba(233, 69, 96, 0.6));
+    filter: drop-shadow(0 0 8px rgba(233, 69, 96, 0.8));
 }
 .clock-center {
     fill: #e94560;
-    filter: drop-shadow(0 0 5px rgba(233, 69, 96, 0.8));
+    filter: drop-shadow(0 0 8px rgba(233, 69, 96, 1));
 }
 .clock-marker-hour {
     stroke: #ffffff;
@@ -224,7 +320,7 @@ body { background-color: #1a1a2e; color: white; }
     stroke-linecap: round;
 }
 .clock-number {
-    fill: rgba(255,255,255,0.6);
+    fill: rgba(255,255,255,0.7);
     font-size: 18px;
     font-family: 'Segoe UI', sans-serif;
     font-weight: 600;
@@ -235,17 +331,18 @@ body { background-color: #1a1a2e; color: white; }
 /* Countdown sovrapposto al centro orologio */
 .clock-countdown {
     position: absolute;
-    top: 55%; left: 50%;
+    top: 53%; left: 50%;
     transform: translate(-50%, -50%);
     font-size: 64px;
     font-family: 'Consolas', 'Courier New', monospace;
     font-weight: 900;
-    color: #e94560;
+    color: #fff;
+    z-index: 3;
     text-shadow:
-        0 0 30px rgba(233, 69, 96, 0.8),
-        0 0 60px rgba(233, 69, 96, 0.4),
-        0 0 100px rgba(233, 69, 96, 0.2);
-    background: radial-gradient(ellipse, rgba(233, 69, 96, 0.12) 0%, transparent 70%);
+        0 0 20px rgba(233, 69, 96, 1),
+        0 0 40px rgba(233, 69, 96, 0.7),
+        0 0 80px rgba(233, 69, 96, 0.4);
+    background: radial-gradient(ellipse, rgba(233, 69, 96, 0.2) 0%, transparent 70%);
     padding: 10px 30px;
     border-radius: 12px;
     letter-spacing: 4px;
@@ -253,21 +350,28 @@ body { background-color: #1a1a2e; color: white; }
 }
 @keyframes countdownPulse {
     0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
-    50% { transform: translate(-50%, -50%) scale(1.05); opacity: 0.85; }
+    50% { transform: translate(-50%, -50%) scale(1.06); opacity: 0.85; }
 }
 
+/* Label con shimmer */
 .phase-label {
-    font-size: 32px;
-    color: rgba(255, 255, 255, 0.85);
-    margin-top: 30px;
-    letter-spacing: 4px;
+    font-size: 34px;
+    margin-top: 40px;
+    letter-spacing: 6px;
     text-transform: uppercase;
-    font-weight: 300;
-    text-shadow: 0 0 20px rgba(233, 69, 96, 0.3);
-    animation: labelFadeIn 0.8s ease-out;
+    font-weight: 600;
+    background: linear-gradient(90deg, #e94560, #fbbf24, #22d3ee, #e94560);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: shimmerText 3s linear infinite, labelFadeIn 0.8s ease-out;
+}
+@keyframes shimmerText {
+    to { background-position: 200% center; }
 }
 @keyframes labelFadeIn {
-    from { opacity: 0; transform: translateY(15px); }
+    from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
@@ -275,20 +379,36 @@ body { background-color: #1a1a2e; color: white; }
 /*  FASE 2 & 5: Annuncio Reparti  */
 /* ============================== */
 .announce-reason-image {
-    margin-bottom: 10px;
-    animation: announceSlideIn 0.5s ease-out;
+    margin-bottom: 15px;
 }
 .reason-emoji {
-    font-size: 80px;
+    font-size: 100px;
     line-height: 1;
-    filter: drop-shadow(0 0 20px rgba(255,255,255,0.2));
+    filter: drop-shadow(0 0 30px rgba(255,255,255,0.3));
+    display: inline-block;
+    animation: emojiBounce 2s ease-in-out infinite;
 }
-.reason-emoji-sm { font-size: 50px; }
+@keyframes emojiBounce {
+    0%, 100% { transform: translateY(0) scale(1); }
+    25% { transform: translateY(-12px) scale(1.05); }
+    50% { transform: translateY(0) scale(1); }
+    75% { transform: translateY(-6px) scale(1.02); }
+}
+.reason-emoji-sm {
+    font-size: 60px;
+    display: inline-block;
+    animation: emojiBounce 2s ease-in-out infinite;
+}
 
 .announce-type {
-    font-size: 42px;
-    font-weight: 700;
-    margin-bottom: 5px;
+    font-size: 48px;
+    font-weight: 800;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, #fff, #fbbf24, #e94560);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 0 15px rgba(233, 69, 96, 0.3));
     animation: announceSlideIn 0.5s ease-out;
 }
 @keyframes announceSlideIn {
@@ -407,9 +527,24 @@ body { background-color: #1a1a2e; color: white; }
 /* ============================== */
 /*  FASE 3: Documento (alternato) */
 /* ============================== */
+.doc-countdown {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    z-index: 10;
+    text-align: center;
+    padding: 12px 0;
+    font-size: 24px;
+    font-weight: 700;
+    font-family: 'Consolas', 'Courier New', monospace;
+    letter-spacing: 2px;
+    color: #fff;
+    background: linear-gradient(180deg, rgba(233, 69, 96, 0.85) 0%, rgba(233, 69, 96, 0.4) 70%, transparent 100%);
+    text-shadow: 0 0 15px rgba(233, 69, 96, 0.8);
+}
 .doc-view {
     width: 100%;
-    height: 100%;
+    height: calc(100% - 50px);
+    margin-top: 50px;
 }
 .break-document-frame {
     width: 100%;

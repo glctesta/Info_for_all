@@ -471,7 +471,10 @@ def get_current_break():
                         "active": True,
                         "phase": phase,
                         "countdown": countdown,
-                        "break": brk
+                        "remaining": to_secs - now_secs,
+                        "break": brk,
+                        "break_sound_duration": breaks_config.get("break_sound_duration_seconds", 30),
+                        "doc_alternate_seconds": breaks_config.get("doc_alternate_seconds", 10)
                     })
 
         return jsonify({"active": False})

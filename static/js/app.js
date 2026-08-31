@@ -390,6 +390,9 @@ function updateBreakPhase(data) {
     } else {
         if (data.phase === 'pre_start' || data.phase === 'pre_end') {
             updateClockCountdown(data.countdown);
+        } else if (data.phase === 'document') {
+            // Aggiorna countdown rimanente durante la fase documento
+            updateDocCountdown(data.remaining);
         } else if (data.phase === 'shift_pre') {
             updateClockCountdown(data.countdown);
             const musicAdv = data.shift_music_advance || 15;
@@ -415,10 +418,10 @@ function showPhase(data) {
 
     switch (data.phase) {
         case 'pre_start':    showPhaseClock(data.countdown, 'Pauză în...'); break;
-        case 'announce_start': showPhaseAnnounce(brk, 'inizio'); break;
-        case 'document':     showPhaseDocument(brk); break;
+        case 'announce_start': showPhaseAnnounce(brk, data); break;
+        case 'document':     showPhaseDocument(data); break;
         case 'pre_end':      showPhaseClock(data.countdown, 'Sfârșitul pauzei în...'); break;
-        case 'announce_end': showPhaseAnnounce(brk, 'fine'); break;
+        case 'announce_end': showPhaseAnnounce(brk, data); break;
         case 'shift_pre':    showPhaseShiftPre(data); break;
         case 'shift_announce': showPhaseShiftAnnounce(data); break;
     }
@@ -492,40 +495,37 @@ function updateClockCountdown(seconds) {
 // ===================================================================
 //  FASE 2 & 5: ANNUNCIO (reparti + motivo + immagine + suono)
 // ===================================================================
-function showPhaseAnnounce(brk, moment) {
+function showPhaseAnnounce(brk, data) {
     stopAnalogClock();
     const panel = document.getElementById('phase-announce');
     panel.classList.remove('hidden');
 
-    // Immagine/emoji del motivo
     const imgEl = document.getElementById('announce-reason-image');
     imgEl.innerHTML = '<span class="reason-emoji">' + getReasonEmoji(brk.reason) + '</span>';
 
-    // Tipo pausa
     const typeEl = document.getElementById('announce-type');
     typeEl.textContent = brk.reason || 'Pauză';
 
-    // Messaggio simpatico sotto il motivo
     const reasonEl = document.getElementById('announce-reason');
     reasonEl.innerHTML = getReasonMessage(brk.reason);
 
-    // Fascia oraria
     document.getElementById('announce-time-range').textContent =
         brk.from_time + ' → ' + brk.to_time;
 
-    // Reparti
     buildDepartmentCards('announce-departments', brk.departments);
 
-    // Suono
+    // Suono con durata dal config server
     if (brk.has_sound) {
-        playBreakSound(brk);
+        const dur = (data.break_sound_duration || 30) * 1000;
+        playBreakSound(brk, dur);
     }
 }
 
 // ===================================================================
-//  FASE 3: DOCUMENTO alternato con REPARTI
+//  FASE 3: DOCUMENTO con countdown + alternanza reparti
 // ===================================================================
-function showPhaseDocument(brk) {
+function showPhaseDocument(data) {
+    const brk = data.break;
     stopAnalogClock();
     stopBreakSound();
     const panel = document.getElementById('phase-document');
@@ -542,6 +542,9 @@ function showPhaseDocument(brk) {
         iframe.srcdoc = '<html><body style="display:flex;align-items:center;justify-content:center;height:100%;margin:0;background:#1a1a2e;color:white;font-family:Segoe UI,sans-serif;font-size:24px;">Pauză în curs</body></html>';
     }
 
+    // Countdown sovrapposto
+    updateDocCountdown(data.remaining);
+
     // Prepara vista reparti alternata
     const reasonImg = document.getElementById('doc-reason-image');
     reasonImg.innerHTML = '<span class="reason-emoji-sm">' + getReasonEmoji(brk.reason) + '</span>';
@@ -555,7 +558,8 @@ function showPhaseDocument(brk) {
     pdfView.classList.remove('hidden');
     deptView.classList.add('hidden');
 
-    // Alterna ogni 10 secondi tra PDF e lista reparti
+    // Alterna con intervallo dal config
+    const altInterval = (data.doc_alternate_seconds || 10) * 1000;
     docAlternateTimer = setInterval(() => {
         showingDocPdf = !showingDocPdf;
         if (showingDocPdf) {
@@ -565,7 +569,12 @@ function showPhaseDocument(brk) {
             pdfView.classList.add('hidden');
             deptView.classList.remove('hidden');
         }
-    }, 10000);
+    }, altInterval);
+}
+
+function updateDocCountdown(seconds) {
+    const el = document.getElementById('doc-countdown');
+    if (el) el.textContent = 'Sfârșitul pauzei: ' + formatCountdown(seconds);
 }
 
 // ===================================================================
@@ -639,11 +648,17 @@ function buildDepartmentCards(containerId, departments) {
 // ===================================================================
 //  AUDIO
 // ===================================================================
-function playBreakSound(brk) {
+function playBreakSound(brk, durationMs) {
     stopBreakSound();
     try {
         breakAudio = new Audio(buildSoundUrl(brk));
+        breakAudio.loop = true;
         breakAudio.play().catch(e => console.warn('Impossibile riprodurre audio:', e));
+        if (durationMs) {
+            setTimeout(() => {
+                if (breakAudio) { breakAudio.loop = false; breakAudio.pause(); breakAudio = null; }
+            }, durationMs);
+        }
     } catch (e) { console.error('Errore riproduzione audio:', e); }
 }
 
