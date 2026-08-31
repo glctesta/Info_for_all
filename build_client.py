@@ -74,11 +74,9 @@ def main():
     else:
         print("\nERRORE: EXE non trovato dopo la build.")
 
-    # Pulizia
+    # Pulizia (solo cartella build, non lo spec)
     if os.path.exists(build_dir):
         shutil.rmtree(build_dir, ignore_errors=True)
-    if os.path.exists(spec_file):
-        os.remove(spec_file)
 
 
 if __name__ == '__main__':
