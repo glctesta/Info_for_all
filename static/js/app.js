@@ -421,10 +421,10 @@ function showPhase(data) {
     if (docAlternateTimer) { clearInterval(docAlternateTimer); docAlternateTimer = null; }
 
     switch (data.phase) {
-        case 'pre_start':    showPhaseClock(data.countdown, 'Pauză în...'); break;
+        case 'pre_start':    showPhaseClock(data, 'Pauză în...'); break;
         case 'announce_start': showPhaseAnnounce(brk, data); break;
         case 'document':     showPhaseDocument(data); break;
-        case 'pre_end':      showPhaseClock(data.countdown, 'Sfârșitul pauzei în...'); break;
+        case 'pre_end':      showPhaseClock(data, 'Sfârșitul pauzei în...'); break;
         case 'announce_end': showPhaseAnnounce(brk, data); break;
         case 'shift_pre':    showPhaseShiftPre(data); break;
         case 'shift_announce': showPhaseShiftAnnounce(data); break;
@@ -480,15 +480,50 @@ function buildDocUrl(brk) {
 }
 
 // ===================================================================
-//  FASE 1 & 4: OROLOGIO + COUNTDOWN
+//  FASE 1 & 4: OROLOGIO + COUNTDOWN + REPARTI SCORREVOLI
 // ===================================================================
-function showPhaseClock(countdown, label) {
+function showPhaseClock(data, label) {
     stopBreakSound();
     const panel = document.getElementById('phase-clock');
     panel.classList.remove('hidden');
     document.getElementById('phase-clock-label').textContent = label;
-    updateClockCountdown(countdown);
+    updateClockCountdown(data.countdown);
     startAnalogClock();
+
+    // Suono gong
+    playGong();
+
+    // Reparti scorrevoli
+    const brk = data.break;
+    const track = document.getElementById('clock-departments-track');
+    if (track && brk && brk.departments && brk.departments.length > 0) {
+        const items = brk.departments.map(d => {
+            let text = d.cdc || '';
+            if (d.sub_cdc) text += ' — ' + d.sub_cdc;
+            return text;
+        }).filter(t => t);
+        // Duplica per loop continuo
+        const joined = items.join('     ★     ');
+        track.textContent = joined + '     ★     ' + joined;
+        // Reset animazione
+        track.style.animation = 'none';
+        track.offsetHeight; // force reflow
+        const duration = Math.max(15, items.length * 4);
+        track.style.animation = 'tickerScroll ' + duration + 's linear infinite';
+        document.getElementById('clock-departments').style.display = 'block';
+    } else {
+        document.getElementById('clock-departments').style.display = 'none';
+    }
+}
+
+function playGong() {
+    try {
+        const gong = document.getElementById('gong-audio');
+        if (gong) {
+            gong.currentTime = 0;
+            gong.play().catch(e => console.warn('Gong non disponibile:', e));
+        }
+    } catch (e) { /* ignore */ }
 }
 
 function updateClockCountdown(seconds) {

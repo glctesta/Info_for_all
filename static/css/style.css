@@ -386,6 +386,31 @@ body { background-color: #1a1a2e; color: white; }
     to { opacity: 1; transform: translateY(0); }
 }
 
+/* Reparti scorrevoli sotto orologio */
+.clock-departments {
+    width: 80%;
+    max-width: 800px;
+    overflow: hidden;
+    margin-top: 20px;
+    position: relative;
+    height: 36px;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0%, #fff 10%, #fff 90%, transparent 100%);
+    mask-image: linear-gradient(90deg, transparent 0%, #fff 10%, #fff 90%, transparent 100%);
+}
+.clock-departments-track {
+    display: inline-block;
+    white-space: nowrap;
+    font-size: 20px;
+    color: rgba(255, 255, 255, 0.7);
+    letter-spacing: 1px;
+    line-height: 36px;
+    animation: tickerScroll 20s linear infinite;
+}
+@keyframes tickerScroll {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+}
+
 /* ============================== */
 /*  FASE 2 & 5: Annuncio Reparti  */
 /* ============================== */
