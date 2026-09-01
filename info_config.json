@@ -66,14 +66,6 @@
         }
     },
 
-    "documents": {
-        "table_name": "InfoDocuments",
-        "id_field": "Id",
-        "content_field": "TextToshow",
-        "title_field": "Title",
-        "filter": "DateOut IS NULL",
-        "order_by": "Id"
-    },
 
     "breaks": {
         "check_interval_seconds": 5,

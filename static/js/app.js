@@ -168,14 +168,6 @@ async function buildPlaylist(silent) {
         monitors.forEach(url => newPlaylist.push({ type: 'monitor', url }));
     } catch (e) { console.error('Errore caricamento monitor:', e); }
 
-    try {
-        const resp = await fetch('/api/documents');
-        const docs = await resp.json();
-        docs.forEach(doc => newPlaylist.push({
-            type: 'document', id: doc.id, title: doc.title || 'Documento ' + doc.id
-        }));
-    } catch (e) { console.error('Errore caricamento documenti:', e); }
-
     const newJson = JSON.stringify(newPlaylist);
 
     // Se silent e la playlist non è cambiata, non ricostruire il DOM

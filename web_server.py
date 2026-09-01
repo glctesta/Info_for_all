@@ -185,80 +185,8 @@ def get_monitors_list():
         return jsonify(list(monitors.keys()))
     return jsonify([])
 
-@app.route('/api/documents')
-def get_documents():
-    config = load_app_config()
-    doc_config = config.get("documents", {})
-    
-    table_name = doc_config.get("table_name")
-    id_field = doc_config.get("id_field")
-    title_field = doc_config.get("title_field")
-    filter_clause = doc_config.get("filter", "1=1")
-    order_by = doc_config.get("order_by", id_field)
-    
-    if not table_name or not id_field:
-        return jsonify([])
-        
-    db = _get_db_connection()
-    if not db:
-        return jsonify([])
-        
-    documents = []
-    try:
-        select_fields = f"{id_field}"
-        if title_field:
-            select_fields += f", {title_field}"
-            
-        query = f"SELECT {select_fields} FROM {table_name} WHERE {filter_clause} ORDER BY {order_by}"
-        cursor = db.connection.cursor()
-        cursor.execute(query)
-        rows = cursor.fetchall()
-        
-        for row in rows:
-            doc_id = row[0]
-            title = row[1] if title_field and len(row) > 1 else str(doc_id)
-            documents.append({"id": doc_id, "title": title})
-            
-    except Exception as e:
-        log.error("Errore nel recupero dei documenti dal DB: %s", e)
-    finally:
-        db.disconnect()
-        
-    return jsonify(documents)
 
-@app.route('/api/documents/<int:doc_id>/content')
-def get_document_content(doc_id):
-    config = load_app_config()
-    doc_config = config.get("documents", {})
-    
-    table_name = doc_config.get("table_name")
-    id_field = doc_config.get("id_field")
-    content_field = doc_config.get("content_field")
-    
-    if not table_name or not id_field or not content_field:
-        return "Configurazione documenti incompleta", 500
-        
-    db = _get_db_connection()
-    if not db:
-        return "Errore di connessione al DB", 500
-        
-    try:
-        query = f"SELECT {content_field} FROM {table_name} WHERE {id_field} = ?"
-        cursor = db.connection.cursor()
-        cursor.execute(query, (doc_id,))
-        row = cursor.fetchone()
-        
-        if row and row[0]:
-            content = row[0]
-            mime_type = detect_mime_type(content)
-            return Response(content, mimetype=mime_type)
-            
-        return "Contenuto non trovato", 404
-    except Exception as e:
-        log.error("Errore nel recupero del contenuto del documento %s: %s", doc_id, e)
-        return "Errore interno", 500
-    finally:
-        db.disconnect()
+
 
 @app.route('/api/breaks')
 def get_breaks():
