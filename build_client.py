@@ -40,7 +40,7 @@ def main():
         sys.executable, '-m', 'PyInstaller',
         '--distpath', dist_dir,
         '--workpath', build_dir,
-        '--clean',
+        '--clean', '--noconfirm',
         spec_file
     ]
 
