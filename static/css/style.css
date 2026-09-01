@@ -55,26 +55,37 @@ body { background-color: #1a1a2e; color: white; }
 @keyframes blurIn { from { filter: blur(20px); opacity: 0; } to { filter: blur(0); opacity: 1; } }
 @keyframes blurOut { from { filter: blur(0); opacity: 1; } to { filter: blur(20px); opacity: 0; } }
 
-/* ============================== */
-/*  Progress Bar                  */
-/* ============================== */
-#progress-bar-container { position: fixed; bottom: 60px; left: 0; right: 0; height: 4px; background: rgba(255,255,255,0.1); z-index: 100; }
+#progress-bar-container { position: fixed; bottom: 30px; left: 0; right: 0; height: 2px; background: rgba(255,255,255,0.06); z-index: 100; }
 #progress-bar { height: 100%; width: 0%; background: linear-gradient(90deg, #e94560, #0f3460); transition: width 0.3s linear; }
 
 /* ============================== */
 /*  Navigation Dots               */
 /* ============================== */
-#nav-dots { position: fixed; bottom: 68px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 100; }
-.nav-dot { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.3); cursor: pointer; transition: all 0.3s; }
-.nav-dot.active { background: #e94560; transform: scale(1.3); box-shadow: 0 0 8px rgba(233,69,96,0.6); }
+#nav-dots { position: fixed; bottom: 35px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; z-index: 100; }
+.nav-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.2); cursor: pointer; transition: all 0.3s; }
+.nav-dot.active { background: #e94560; transform: scale(1.3); box-shadow: 0 0 6px rgba(233,69,96,0.5); }
 
 /* ============================== */
 /*  Footer                        */
 /* ============================== */
-#footer { position: fixed; bottom: 0; left: 0; right: 0; height: 60px; display: flex; align-items: center; justify-content: flex-end; padding: 0 20px; background: linear-gradient(135deg, #16213e, #0f3460); z-index: 100; }
-.footer-right { display: flex; align-items: center; gap: 10px; }
-.powered-by { font-size: 14px; color: rgba(255,255,255,0.7); font-style: italic; }
-.footer-logo { height: 35px; border-radius: 4px; }
+#footer {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    height: 28px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 15px;
+    background: rgba(15, 25, 50, 0.7);
+    z-index: 100;
+}
+.footer-left { display: flex; align-items: center; }
+.footer-monitor-name {
+    font-size: 11px;
+    color: rgba(255,255,255,0.35);
+    letter-spacing: 1px;
+    font-family: 'Consolas', monospace;
+}
+.footer-right { display: flex; align-items: center; gap: 8px; }
+.powered-by { font-size: 10px; color: rgba(255,255,255,0.35); font-style: italic; }
+.footer-logo { height: 18px; border-radius: 2px; opacity: 0.6; }
 
 /* ============================== */
 /*  Break Overlay (contenitore)   */

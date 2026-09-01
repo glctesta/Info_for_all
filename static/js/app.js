@@ -27,6 +27,10 @@ async function init() {
     monitorName = params.get('monitor') || '';
     console.log('Monitor:', monitorName || '(default)');
 
+    // Mostra nome monitor nel footer
+    const footerName = document.getElementById('footer-monitor-name');
+    if (footerName && monitorName) footerName.textContent = monitorName;
+
     await loadConfig();
     buildClockMarkers();
     await buildPlaylist();
