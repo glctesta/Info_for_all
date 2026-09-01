@@ -6,10 +6,12 @@
     "client_version": "1.1.0",
 
     "monitors": {
-        "MONITOR_PRODUZIONE_1": {
+        "MONITOR_KANBANPTHM": {
             "urls": [
-                {"ip": "192.168.10.72", "port": 5001},
-                {"ip": "192.168.10.72", "port": 5065}
+                {"ip": "192.168.10.72", "port": 8090},
+                {"ip": "192.168.10.72", "port": 8071, "path": "/monitor?lines=LINEA_1,LINEA_2"},
+				{"ip": "192.168.10.72", "port": 8071, "path": "/monitor?lines=LINEA_3,LINEA_4"},
+				{"ip": "192.168.10.72", "port": 8071}
             ],
             "rotation": {
                 "monitor_interval_seconds": 300,
@@ -18,7 +20,7 @@
                 "transition_duration_ms": 1000
             }
         },
-        "MONITOR_OROLOGIO": {
+        "MONITOR_PRODUZIONE_1": {
             "urls": [
                 {"ip": "192.168.10.72", "port": 8085},
                 {"ip": "192.168.10.72", "port": 8090},
