@@ -10,9 +10,9 @@ body { background-color: #1a1a2e; color: white; }
 /* ============================== */
 #content-area { position: absolute; top: 0; bottom: 28px; left: 0; right: 0; overflow: hidden; }
 #slide-container { width: 100%; height: 100%; position: relative; }
-.slide { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; visibility: hidden; transition-property: opacity, transform, filter; }
+.slide { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; visibility: hidden; transition: opacity 0.8s ease, visibility 0.8s; }
 .slide.active { opacity: 1; visibility: visible; z-index: 2; }
-.slide.exiting { z-index: 1; }
+.slide.exiting { opacity: 0; visibility: visible; z-index: 1; transition: opacity 0.8s ease, visibility 0.8s; }
 .slide iframe, .slide img, .slide embed { width: 100%; height: 100%; border: none; object-fit: contain; background: #1a1a2e; }
 
 /* ============================== */
@@ -66,8 +66,8 @@ body { background-color: #1a1a2e; color: white; }
     height: 28px;
     display: flex; align-items: center; justify-content: space-between;
     padding: 0 15px;
-    background: rgba(15, 25, 50, 0.7);
-    z-index: 100;
+    background: rgba(10, 15, 30, 0.95);
+    z-index: 200;
 }
 .footer-left { display: flex; align-items: center; gap: 12px; }
 .footer-monitor-name {

@@ -225,14 +225,17 @@ function showSlide(index) {
     if (playlist.length === 0) return;
     const slides = document.querySelectorAll('.slide');
     const dots = document.querySelectorAll('.nav-dot');
+
+    // La slide vecchia diventa "exiting" (fade out sotto)
     slides.forEach(s => {
         if (s.classList.contains('active')) {
             s.classList.remove('active');
             s.classList.add('exiting');
-            const dur = config.rotation?.transition_duration_ms || 1000;
-            setTimeout(() => s.classList.remove('exiting'), dur);
+            setTimeout(() => s.classList.remove('exiting'), 1000);
         }
     });
+
+    // La nuova slide diventa active (fade in sopra)
     currentIndex = index;
     if (slides[currentIndex]) slides[currentIndex].classList.add('active');
     dots.forEach((d, i) => d.classList.toggle('active', i === currentIndex));
