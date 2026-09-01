@@ -504,6 +504,79 @@ body { background-color: #1a1a2e; color: white; }
     font-style: italic;
 }
 
+/* ============================== */
+/*  FASE 5: FINE PAUSA            */
+/* ============================== */
+.break-end-icon {
+    font-size: 100px;
+    margin-bottom: 10px;
+    animation: endBounce 1s ease-in-out;
+}
+@keyframes endBounce {
+    0% { transform: scale(0); opacity: 0; }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); opacity: 1; }
+}
+.break-end-title {
+    font-size: 56px;
+    font-weight: 900;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    background: linear-gradient(135deg, #22d3ee, #10b981, #34d399);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 0 30px rgba(16, 185, 129, 0.4));
+    margin-bottom: 15px;
+    animation: endTitleIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes endTitleIn {
+    from { transform: scale(0.5) translateY(30px); opacity: 0; }
+    to { transform: scale(1) translateY(0); opacity: 1; }
+}
+.break-end-subtitle {
+    font-size: 28px;
+    color: rgba(255, 255, 255, 0.8);
+    font-weight: 300;
+    margin-bottom: 40px;
+    animation: endSubIn 0.6s ease-out 0.3s backwards;
+}
+@keyframes endSubIn {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.break-end-next {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(34, 211, 238, 0.25);
+    border-radius: 16px;
+    padding: 20px 40px;
+    max-width: 500px;
+    animation: endNextIn 0.6s ease-out 0.6s backwards;
+}
+@keyframes endNextIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.next-break-label {
+    font-size: 16px;
+    color: rgba(255,255,255,0.5);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+}
+.next-break-info {
+    font-size: 22px;
+    color: #e0e0e0;
+}
+.next-break-reason {
+    color: #fbbf24;
+    font-weight: 600;
+}
+.next-break-time {
+    font-family: 'Consolas', monospace;
+    color: #22d3ee;
+}
+
 .announce-time-range {
     font-size: 30px;
     color: rgba(255,255,255,0.6);

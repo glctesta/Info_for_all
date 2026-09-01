@@ -409,6 +409,7 @@ function updateBreakPhase(data) {
 function hideAllPhases() {
     document.getElementById('phase-clock')?.classList.add('hidden');
     document.getElementById('phase-announce')?.classList.add('hidden');
+    document.getElementById('phase-break-end')?.classList.add('hidden');
     document.getElementById('phase-document')?.classList.add('hidden');
 }
 
@@ -423,7 +424,7 @@ function showPhase(data) {
         case 'announce_start': showPhaseAnnounce(brk, data); break;
         case 'document':     showPhaseDocument(data); break;
         case 'pre_end':      showPhaseClock(data, 'Sfârșitul pauzei în...'); break;
-        case 'announce_end': showPhaseAnnounce(brk, data); break;
+        case 'announce_end': showPhaseBreakEnd(data); break;
         case 'shift_pre':    showPhaseShiftPre(data); break;
         case 'shift_announce': showPhaseShiftAnnounce(data); break;
     }
@@ -612,6 +613,33 @@ function showPhaseDocument(data) {
 function updateDocCountdown(seconds) {
     const el = document.getElementById('doc-countdown');
     if (el) el.textContent = 'Sfârșitul pauzei: ' + formatCountdown(seconds);
+}
+
+// ===================================================================
+//  FASE 5: FINE PAUSA — messaggio chiaro
+// ===================================================================
+function showPhaseBreakEnd(data) {
+    stopAnalogClock();
+    stopBreakSound();
+    playGong();
+
+    const panel = document.getElementById('phase-break-end');
+    panel.classList.remove('hidden');
+
+    // Prossima pausa
+    const nextEl = document.getElementById('break-end-next');
+    if (data.next_break) {
+        const nb = data.next_break;
+        nextEl.innerHTML =
+            '<div class="next-break-label">Următoarea pauză:</div>' +
+            '<div class="next-break-info">' +
+                '<span class="next-break-reason">' + escapeHtml(nb.reason || 'Pauză') + '</span>' +
+                ' — ' +
+                '<span class="next-break-time">' + nb.from_time + ' → ' + nb.to_time + '</span>' +
+            '</div>';
+    } else {
+        nextEl.innerHTML = '<div class="next-break-label">Nu mai sunt pauze programate pentru acest schimb.</div>';
+    }
 }
 
 // ===================================================================

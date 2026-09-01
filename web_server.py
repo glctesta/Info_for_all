@@ -395,7 +395,7 @@ def get_current_break():
                     countdown = p5_end - now_secs
 
                 if phase:
-                    return jsonify({
+                    resp = {
                         "active": True,
                         "phase": phase,
                         "countdown": countdown,
@@ -403,7 +403,18 @@ def get_current_break():
                         "break": brk,
                         "break_sound_duration": breaks_config.get("break_sound_duration_seconds", 30),
                         "doc_alternate_seconds": breaks_config.get("doc_alternate_seconds", 10)
-                    })
+                    }
+                    # Se fase finale, cerca la prossima pausa
+                    if phase == "announce_end":
+                        next_break = None
+                        for (nft, ntt), nbrk in slots.items():
+                            nf_secs = _time_str_to_secs(nft)
+                            if nf_secs > to_secs:
+                                if next_break is None or nf_secs < next_break["from_secs"]:
+                                    next_break = {"from_secs": nf_secs, "from_time": nft, "to_time": ntt, "reason": nbrk.get("reason", "")}
+                        if next_break:
+                            resp["next_break"] = {"from_time": next_break["from_time"], "to_time": next_break["to_time"], "reason": next_break["reason"]}
+                    return jsonify(resp)
 
         return jsonify({"active": False})
     except Exception as e:
