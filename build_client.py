@@ -55,20 +55,28 @@ def main():
 
     # Copia il template della config client nella cartella dist
     config_template = os.path.join(app_dir, 'client_config.json')
-    if os.path.exists(config_template):
-        shutil.copy2(config_template, os.path.join(dist_dir, 'client_config.json'))
-        print(f"\nCopiato client_config.json in {dist_dir}")
+    out_dir = os.path.join(dist_dir, exe_name)
+    if os.path.exists(config_template) and os.path.isdir(out_dir):
+        shutil.copy2(config_template, os.path.join(out_dir, 'client_config.json'))
+        print(f"\nCopiato client_config.json in {out_dir}")
 
-    exe_path = os.path.join(dist_dir, f'{exe_name}.exe')
+    exe_path = os.path.join(out_dir, f'{exe_name}.exe')
     if os.path.exists(exe_path):
         size_mb = os.path.getsize(exe_path) / (1024 * 1024)
+        # Calcola dimensione totale directory
+        total = sum(
+            os.path.getsize(os.path.join(dp, f))
+            for dp, _, fns in os.walk(out_dir) for f in fns
+        )
+        total_mb = total / (1024 * 1024)
         print(f"\n{'=' * 50}")
         print(f"BUILD COMPLETATA!")
-        print(f"EXE: {exe_path}")
-        print(f"Dimensione: {size_mb:.1f} MB")
+        print(f"Directory: {out_dir}")
+        print(f"EXE: {exe_path} ({size_mb:.1f} MB)")
+        print(f"Totale directory: {total_mb:.1f} MB")
         print(f"{'=' * 50}")
         print(f"\nPer distribuire il client:")
-        print(f"  1. Copia '{dist_dir}' sul PC client")
+        print(f"  1. Copia la cartella '{out_dir}' sul PC client")
         print(f"  2. Modifica 'client_config.json' con server_url e monitor_name corretti")
         print(f"  3. Avvia '{exe_name}.exe'")
     else:
