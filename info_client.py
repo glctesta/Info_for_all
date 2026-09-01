@@ -149,11 +149,15 @@ def restart_self():
     """Riavvia l'applicazione."""
     log.info("Riavvio in corso...")
     exe = os.path.abspath(sys.argv[0])
-    if getattr(sys, 'frozen', False):
-        subprocess.Popen([exe])
-    else:
-        subprocess.Popen([sys.executable, exe])
-    sys.exit(0)
+    try:
+        if getattr(sys, 'frozen', False):
+            subprocess.Popen([exe])
+        else:
+            subprocess.Popen([sys.executable, exe])
+        sys.exit(0)
+    except OSError as e:
+        log.error("Impossibile riavviare (policy di sicurezza?): %s", e)
+        log.info("Il programma continuerà senza riavvio.")
 
 
 # ===================================================================
