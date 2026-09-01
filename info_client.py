@@ -92,7 +92,8 @@ def save_config(cfg):
 
 def check_for_update(server_url, local_version):
     """Controlla se c'è un aggiornamento disponibile sul server.
-    Restituisce True se è stato scaricato un nuovo EXE (richiede riavvio).
+    Scarica lo ZIP e lo estrae nella directory corrente.
+    Restituisce True se è stato aggiornato (richiede riavvio).
     """
     try:
         version_url = f"{server_url}/api/client/version"
@@ -107,28 +108,28 @@ def check_for_update(server_url, local_version):
         log.info("Nuova versione disponibile: %s (attuale: %s). Scaricamento in corso...",
                  server_version, local_version)
 
-        # Scarica il nuovo EXE
+        # Scarica lo ZIP
         download_url = f"{server_url}/api/client/download"
-        exe_path = os.path.abspath(sys.argv[0])
-        temp_path = exe_path + ".update"
+        import zipfile, tempfile
+        zip_path = os.path.join(tempfile.gettempdir(), "InfoForAll_Client_update.zip")
+        urllib.request.urlretrieve(download_url, zip_path)
 
-        urllib.request.urlretrieve(download_url, temp_path)
-
-        # Verifica che il file scaricato sia valido (almeno 100KB)
-        if os.path.getsize(temp_path) < 100_000:
+        # Verifica che il file scaricato sia valido (almeno 500KB)
+        if os.path.getsize(zip_path) < 500_000:
             log.warning("File scaricato troppo piccolo, aggiornamento annullato.")
-            os.remove(temp_path)
+            os.remove(zip_path)
             return False
 
-        # Su Windows: rinomina il vecchio, metti il nuovo
-        backup_path = exe_path + ".old"
-        if os.path.exists(backup_path):
-            os.remove(backup_path)
-        if os.path.exists(exe_path) and getattr(sys, 'frozen', False):
-            os.rename(exe_path, backup_path)
-            os.rename(temp_path, exe_path)
+        # Estrai nella directory dell'EXE
+        if getattr(sys, 'frozen', False):
+            app_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
         else:
-            os.remove(temp_path)
+            app_dir = os.path.dirname(os.path.abspath(__file__))
+
+        log.info("Estrazione aggiornamento in %s...", app_dir)
+        with zipfile.ZipFile(zip_path, 'r') as zf:
+            zf.extractall(app_dir)
+        os.remove(zip_path)
 
         # Aggiorna la versione nella config locale
         cfg = load_config()

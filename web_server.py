@@ -522,15 +522,26 @@ def get_client_version():
 
 @app.route('/api/client/download')
 def download_client():
-    """Serve l'EXE del client dalla cartella client_dist/."""
-    dist_dir = os.path.join(APP_DIR, 'client_dist')
-    exe_name = 'InfoForAll_Client.exe'
-    exe_path = os.path.join(dist_dir, exe_name)
+    """Serve uno ZIP della cartella client InfoForAll_Client/."""
+    import zipfile
+    from io import BytesIO
 
-    if os.path.exists(exe_path):
-        return send_from_directory(dist_dir, exe_name, as_attachment=True)
+    dist_dir = os.path.join(APP_DIR, 'client_dist', 'InfoForAll_Client')
+    if not os.path.isdir(dist_dir):
+        return "Client non trovato. Eseguire build_client.py.", 404
 
-    return "Client EXE non trovato. Eseguire build_client.py per generarlo.", 404
+    buf = BytesIO()
+    with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as zf:
+        for root, dirs, files in os.walk(dist_dir):
+            for f in files:
+                if f == 'client_config.json':
+                    continue  # Non sovrascrivere la config locale
+                full = os.path.join(root, f)
+                arcname = os.path.relpath(full, dist_dir)
+                zf.write(full, arcname)
+    buf.seek(0)
+    return Response(buf.read(), mimetype='application/zip',
+                    headers={'Content-Disposition': 'attachment; filename=InfoForAll_Client.zip'})
 
 
 def create_app():
