@@ -18,6 +18,7 @@ let analogClockInterval = null;
 let monitorName = '';
 let docAlternateTimer = null;
 let showingDocPdf = true;
+let deptCarouselTimers = {};
 
 // ===================================================================
 //  INITIALIZATION
@@ -366,6 +367,11 @@ function deactivateBreak() {
     shiftMusicStarted = false;
     if (shiftMusicTimer) { clearTimeout(shiftMusicTimer); shiftMusicTimer = null; }
     if (docAlternateTimer) { clearInterval(docAlternateTimer); docAlternateTimer = null; }
+    // Ferma carousel reparti
+    Object.keys(deptCarouselTimers).forEach(k => {
+        clearInterval(deptCarouselTimers[k]);
+    });
+    deptCarouselTimers = {};
     stopAnalogClock();
     stopBreakSound();
 
@@ -655,11 +661,18 @@ function showPhaseShiftAnnounce(data) {
 function buildDepartmentCards(containerId, departments) {
     const container = document.getElementById(containerId);
     container.innerHTML = '';
+    // Ferma eventuale carousel precedente
+    if (deptCarouselTimers[containerId]) {
+        clearInterval(deptCarouselTimers[containerId]);
+        delete deptCarouselTimers[containerId];
+    }
     if (!departments || departments.length === 0) return;
 
-    departments.forEach(dept => {
-        const card = document.createElement('div');
-        card.className = 'dept-card';
+    const CARDS_PER_PAGE = 6;
+    const PAGE_INTERVAL = 4000; // ms tra una pagina e l'altra
+
+    // Crea tutte le card HTML
+    const allCards = departments.map(dept => {
         let html = '';
         if (dept.cdc) {
             html += '<div class="dept-label">Departament</div>';
@@ -669,11 +682,74 @@ function buildDepartmentCards(containerId, departments) {
             html += '<div class="dept-label">Sub-departament</div>';
             html += '<div class="dept-value">' + escapeHtml(String(dept.sub_cdc)) + '</div>';
         }
-        if (html) {
-            card.innerHTML = html;
-            container.appendChild(card);
-        }
-    });
+        return html;
+    }).filter(h => h);
+
+    if (allCards.length === 0) return;
+
+    // Dividi in pagine
+    const pages = [];
+    for (let i = 0; i < allCards.length; i += CARDS_PER_PAGE) {
+        pages.push(allCards.slice(i, i + CARDS_PER_PAGE));
+    }
+
+    // Wrapper con overflow nascosto
+    container.innerHTML = '<div class="dept-carousel"></div>';
+    if (pages.length > 1) {
+        container.innerHTML += '<div class="dept-page-dots"></div>';
+    }
+    const carousel = container.querySelector('.dept-carousel');
+    const dotsContainer = container.querySelector('.dept-page-dots');
+
+    // Crea dots
+    if (dotsContainer) {
+        pages.forEach((_, i) => {
+            const dot = document.createElement('span');
+            dot.className = 'dept-dot' + (i === 0 ? ' active' : '');
+            dotsContainer.appendChild(dot);
+        });
+    }
+
+    let currentPage = 0;
+
+    function showPage(pageIndex) {
+        // Fade out corrente
+        carousel.classList.add('dept-fadeout');
+
+        setTimeout(() => {
+            carousel.innerHTML = '';
+            const page = pages[pageIndex];
+            page.forEach((cardHtml, idx) => {
+                const card = document.createElement('div');
+                card.className = 'dept-card dept-card-anim';
+                card.style.animationDelay = (idx * 0.08) + 's';
+                card.innerHTML = cardHtml;
+                carousel.appendChild(card);
+            });
+
+            carousel.classList.remove('dept-fadeout');
+            carousel.classList.add('dept-fadein');
+            setTimeout(() => carousel.classList.remove('dept-fadein'), 600);
+
+            // Aggiorna dots
+            if (dotsContainer) {
+                dotsContainer.querySelectorAll('.dept-dot').forEach((d, i) => {
+                    d.classList.toggle('active', i === pageIndex);
+                });
+            }
+        }, 300);
+    }
+
+    // Prima pagina
+    showPage(0);
+
+    // Rotazione automatica se più pagine
+    if (pages.length > 1) {
+        deptCarouselTimers[containerId] = setInterval(() => {
+            currentPage = (currentPage + 1) % pages.length;
+            showPage(currentPage);
+        }, PAGE_INTERVAL);
+    }
 }
 
 // ===================================================================

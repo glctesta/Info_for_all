@@ -47,7 +47,19 @@
                 "transition_effect": "slide",
                 "transition_duration_ms": 800
             }
+        },		
+		"MONITOR_PTHM3-4": {
+            "urls": [
+                {"ip": "192.168.10.72", "port": 8071, "path": "/monitor?lines=LINEA_3,LINEA_4"}
+            ],
+            "rotation": {
+                "monitor_interval_seconds": 120,
+                "slideshow_interval_seconds": 15,
+                "transition_effect": "slide",
+                "transition_duration_ms": 800
+            }
         },
+		
         "MONITOR_GM": {
             "urls": [
                 {"ip": "192.168.10.72", "port": 8085},
