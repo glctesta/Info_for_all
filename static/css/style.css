@@ -6,16 +6,9 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI
 body { background-color: #1a1a2e; color: white; }
 
 /* ============================== */
-/*  Header                        */
-/* ============================== */
-#header { position: fixed; top: 0; left: 0; right: 0; height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; background: linear-gradient(135deg, #16213e, #0f3460); z-index: 100; }
-.header-logo { height: 45px; }
-.clock { font-size: 28px; font-weight: 700; font-family: 'Consolas', monospace; color: #e94560; text-shadow: 0 0 10px rgba(233,69,96,0.5); }
-
-/* ============================== */
 /*  Main Content / Slides         */
 /* ============================== */
-#content-area { position: absolute; top: 60px; bottom: 60px; left: 0; right: 0; overflow: hidden; }
+#content-area { position: absolute; top: 0; bottom: 28px; left: 0; right: 0; overflow: hidden; }
 #slide-container { width: 100%; height: 100%; position: relative; }
 .slide { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; visibility: hidden; transition-property: opacity, transform, filter; }
 .slide.active { opacity: 1; visibility: visible; z-index: 2; }
@@ -76,12 +69,18 @@ body { background-color: #1a1a2e; color: white; }
     background: rgba(15, 25, 50, 0.7);
     z-index: 100;
 }
-.footer-left { display: flex; align-items: center; }
+.footer-left { display: flex; align-items: center; gap: 12px; }
 .footer-monitor-name {
     font-size: 11px;
     color: rgba(255,255,255,0.35);
     letter-spacing: 1px;
     font-family: 'Consolas', monospace;
+}
+.footer-clock {
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'Consolas', monospace;
+    color: rgba(233, 69, 96, 0.7);
 }
 .footer-right { display: flex; align-items: center; gap: 8px; }
 .powered-by { font-size: 10px; color: rgba(255,255,255,0.35); font-style: italic; }
