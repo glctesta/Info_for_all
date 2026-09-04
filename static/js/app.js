@@ -437,8 +437,12 @@ function showPhase(data) {
 //  REASON HELPERS
 // ===================================================================
 
+function stripDiacritics(s) {
+    return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
 function getReasonEmoji(reason) {
-    const r = (reason || '').toLowerCase();
+    const r = stripDiacritics((reason || '').toLowerCase());
     if (r.includes('pran') || r.includes('masa') || r.includes('lunch') || r.includes('mensa'))
         return '🍝';
     if (r.includes('sigar') || r.includes('fumar') || r.includes('tigar') || r.includes('smok'))
@@ -449,7 +453,7 @@ function getReasonEmoji(reason) {
 }
 
 function getReasonMessage(reason) {
-    const r = (reason || '').toLowerCase();
+    const r = stripDiacritics((reason || '').toLowerCase());
     if (r.includes('pran') || r.includes('masa') || r.includes('lunch') || r.includes('mensa'))
         return '<div class="reason-fun reason-lunch">🍝 Poftă bună tuturor! 🍕</div>';
     if (r.includes('sigar') || r.includes('fumar') || r.includes('tigar') || r.includes('smok'))
@@ -543,10 +547,13 @@ function showPhaseAnnounce(brk, data) {
     panel.classList.remove('hidden');
 
     const imgEl = document.getElementById('announce-reason-image');
-    imgEl.innerHTML = '<span class="reason-emoji">' + getReasonEmoji(brk.reason) + '</span>';
+    imgEl.innerHTML = ''; // Non mostrare emoji separato sopra
 
+    const emoji = getReasonEmoji(brk.reason);
     const typeEl = document.getElementById('announce-type');
-    typeEl.textContent = brk.reason || 'Pauză';
+    typeEl.innerHTML = '<span class="title-emoji">' + emoji + '</span> '
+                     + escapeHtml(brk.reason || 'Pauză')
+                     + ' <span class="title-emoji">' + emoji + '</span>';
 
     const reasonEl = document.getElementById('announce-reason');
     reasonEl.innerHTML = getReasonMessage(brk.reason);

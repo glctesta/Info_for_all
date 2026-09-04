@@ -452,6 +452,13 @@ body { background-color: #1a1a2e; color: white; }
     from { transform: translateY(-30px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
 }
+.title-emoji {
+    -webkit-text-fill-color: initial;
+    font-size: 52px;
+    vertical-align: middle;
+    display: inline-block;
+    animation: emojiBounce 2s ease-in-out infinite;
+}
 
 .announce-reason { margin-bottom: 15px; }
 
