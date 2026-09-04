@@ -226,6 +226,8 @@ body { background-color: #1a1a2e; color: white; }
     width: 100%; height: 100%;
     display: flex; flex-direction: column;
     align-items: center; justify-content: center;
+    text-align: center;
+    padding: 20px 40px;
     animation: phaseFadeIn 0.5s ease-out;
 }
 .phase-panel.hidden { display: none; }
@@ -591,14 +593,19 @@ body { background-color: #1a1a2e; color: white; }
     margin-bottom: 20px;
     padding-bottom: 10px;
     border-bottom: 2px solid rgba(251, 191, 36, 0.3);
+    text-align: center;
+    width: 100%;
 }
 
 .announce-departments {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
+    align-items: center;
     gap: 15px;
     max-width: 900px;
+    width: 100%;
+    margin: 0 auto;
 }
 
 /* Carousel container */
@@ -694,10 +701,13 @@ body { background-color: #1a1a2e; color: white; }
     background: linear-gradient(180deg, rgba(233, 69, 96, 0.85) 0%, rgba(233, 69, 96, 0.4) 70%, transparent 100%);
     text-shadow: 0 0 15px rgba(233, 69, 96, 0.8);
 }
+#phase-document {
+    padding: 0 !important;
+}
 .doc-view {
     width: 100%;
-    height: calc(100% - 50px);
-    margin-top: 50px;
+    height: 100%;
+    position: relative;
 }
 .break-document-frame {
     width: 100%;

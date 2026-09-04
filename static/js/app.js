@@ -440,12 +440,12 @@ function showPhase(data) {
 function getReasonEmoji(reason) {
     const r = (reason || '').toLowerCase();
     if (r.includes('pran') || r.includes('masa') || r.includes('lunch') || r.includes('mensa'))
-        return '🍽️';
+        return '🍝';
     if (r.includes('sigar') || r.includes('fumar') || r.includes('tigar') || r.includes('smok'))
         return '🚬';
     if (r.includes('schimb') || r.includes('turno') || r.includes('shift'))
         return '🔄';
-    return '☕';
+    return '⏸️';
 }
 
 function getReasonMessage(reason) {
@@ -478,7 +478,8 @@ function buildSoundUrl(brk) {
 function buildDocUrl(brk) {
     return '/api/breaks/document?from=' + encodeURIComponent(brk.from_time)
          + '&to=' + encodeURIComponent(brk.to_time)
-         + '&shift=' + encodeURIComponent(brk.shift);
+         + '&shift=' + encodeURIComponent(brk.shift)
+         + '#toolbar=0&navpanes=0&scrollbar=0';
 }
 
 // ===================================================================
