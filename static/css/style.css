@@ -473,6 +473,30 @@ body { background-color: #1a1a2e; color: white; }
     background: rgba(233, 69, 96, 0.06);
     animation: reasonPopIn 0.6s ease-out;
 }
+.shift-detail {
+    display: flex;
+    gap: 40px;
+    justify-content: center;
+    align-items: center;
+    margin: 15px 0;
+    animation: reasonPopIn 0.6s ease-out;
+}
+.shift-start {
+    font-size: 26px;
+    color: #34d399;
+    padding: 12px 24px;
+    border: 1px solid rgba(52, 211, 153, 0.3);
+    border-radius: 12px;
+    background: rgba(52, 211, 153, 0.08);
+}
+.shift-end {
+    font-size: 26px;
+    color: #f87171;
+    padding: 12px 24px;
+    border: 1px solid rgba(248, 113, 113, 0.3);
+    border-radius: 12px;
+    background: rgba(248, 113, 113, 0.08);
+}
 
 /* Messaggi simpatici per pranzo / sigaretta */
 .reason-fun {

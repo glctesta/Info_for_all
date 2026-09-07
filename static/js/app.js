@@ -659,7 +659,23 @@ function showPhaseBreakEnd(data) {
 function showPhaseShiftPre(data) {
     const panel = document.getElementById('phase-clock');
     panel.classList.remove('hidden');
-    document.getElementById('phase-clock-label').textContent = 'Schimb de tură în...';
+
+    // Messaggio chiaro: quale turno inizia
+    const shiftName = data.shift_names?.[String(data.current_shift)] || ('Tura ' + data.current_shift);
+    document.getElementById('phase-clock-label').textContent = '🔄 Începe ' + shiftName + ' în...';
+
+    // Reparti che iniziano il turno, sotto l'orologio
+    const track = document.getElementById('clock-departments-track');
+    const depts = data.break?.departments || [];
+    if (depts.length > 0) {
+        const cdcNames = [...new Set(depts.map(d => d.sub_cdc || d.cdc).filter(Boolean))];
+        track.textContent = 'Departamente: ' + cdcNames.join(' • ');
+        track.style.animationDuration = Math.max(10, cdcNames.length * 2) + 's';
+        document.getElementById('clock-departments').style.display = 'block';
+    } else {
+        document.getElementById('clock-departments').style.display = 'none';
+    }
+
     updateClockCountdown(data.countdown);
     startAnalogClock();
 
@@ -676,17 +692,40 @@ function showPhaseShiftAnnounce(data) {
     const panel = document.getElementById('phase-announce');
     panel.classList.remove('hidden');
 
-    document.getElementById('announce-reason-image').innerHTML =
-        '<span class="reason-emoji">🔄</span>';
-    document.getElementById('announce-type').textContent =
-        brk.reason || config.breaks?.shift_change_label || 'Schimb de Tură';
-    document.getElementById('announce-reason').innerHTML =
-        '<div class="shift-all-staff">Toți operatorii, tehnicienii, șefii de tură, șefii de linie,<br>producția, calitatea, magazinul și mentenanța</div>';
+    // Nomi turni
+    const startShift = data.current_shift || 1;
+    const endShift = data.ending_shift || startShift;
+    const startName = data.shift_names?.[String(startShift)] || ('Tura ' + startShift);
+    const endName = data.shift_names?.[String(endShift)] || ('Tura ' + endShift);
+
+    // Emoji
+    document.getElementById('announce-reason-image').innerHTML = '';
+
+    // Titolo con messaggio chiaro
+    const typeEl = document.getElementById('announce-type');
+    typeEl.innerHTML = '<span class="title-emoji">🔄</span> SCHIMB DE TURĂ <span class="title-emoji">🔄</span>';
+
+    // Messaggio dettagliato
+    const reasonEl = document.getElementById('announce-reason');
+    reasonEl.innerHTML =
+        '<div class="shift-detail">' +
+            '<div class="shift-start">▶ Începe: <strong>' + escapeHtml(startName) + '</strong></div>' +
+            '<div class="shift-end">◼ Se termină: <strong>' + escapeHtml(endName) + '</strong></div>' +
+        '</div>';
+
     document.getElementById('announce-time-range').textContent = 'Ora ' + brk.from_time;
 
-    // Cambio turno: nessuna lista reparti (riguarda tutti)
-    document.getElementById('announce-departments').innerHTML = '';
-    document.querySelector('#phase-announce .announce-section-title').textContent = '';
+    // Mostra i reparti che iniziano il turno
+    const depts = brk.departments || [];
+    const sectionTitle = document.querySelector('#phase-announce .announce-section-title');
+    if (depts.length > 0) {
+        sectionTitle.textContent = 'Departamente care încep tura';
+        buildDepartmentCards('announce-departments', depts);
+    } else {
+        sectionTitle.textContent = 'Toți angajații';
+        document.getElementById('announce-departments').innerHTML =
+            '<div class="shift-all-staff">Toți operatorii, tehnicienii, șefii de tură,<br>producția, calitatea, magazinul și mentenanța</div>';
+    }
 
     if (!shiftMusicStarted && brk.has_sound) {
         shiftMusicStarted = true;

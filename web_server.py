@@ -332,6 +332,11 @@ def get_current_break():
             s = int(p[2]) if len(p) > 2 else 0
             return h * 3600 + m * 60 + s
 
+        # Debug: log di tutti gli slot trovati
+        for (ft, tt), brk in slots.items():
+            log.info("SLOT: %s → %s | cambio_turno=%s | reason=%s | shift=%s",
+                     ft, tt, brk["is_for_change_shift"], brk.get("reason"), brk.get("shift"))
+
         # Cerca la fascia oraria attiva
         for (ft, tt), brk in slots.items():
             from_secs = _time_str_to_secs(ft)
@@ -353,13 +358,23 @@ def get_current_break():
                     countdown = p_announce_end - now_secs
 
                 if phase:
+                    total_shifts = breaks_config.get("total_shifts", 2)
+                    shift_names = breaks_config.get("shift_names", {})
+                    current_shift = shift
+                    # Il turno che finisce è quello precedente
+                    ending_shift = ((current_shift - 2) % total_shifts) + 1
+
                     return jsonify({
                         "active": True,
                         "phase": phase,
                         "countdown": countdown,
                         "break": brk,
                         "shift_music_advance": shift_music_adv,
-                        "shift_music_duration": shift_music_dur
+                        "shift_music_duration": shift_music_dur,
+                        "total_shifts": total_shifts,
+                        "shift_names": shift_names,
+                        "current_shift": current_shift,
+                        "ending_shift": ending_shift
                     })
             else:
                 # ── PAUSA NORMALE: 5 fasi ──

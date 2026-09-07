@@ -107,6 +107,12 @@
         "shift_change_music_advance_seconds": 15,
         "shift_change_music_duration_seconds": 60,
         "doc_alternate_seconds": 10,
+        "total_shifts": 2,
+        "shift_names": {
+            "1": "Tura 1 (07:30–15:30)",
+            "2": "Tura 2 (15:30–23:30)",
+            "3": "Tura 3 (23:30–07:30)"
+        },
         "smoking_break_label": "\ud83d\udeac Pausa Sigaretta",
         "shift_change_label": "\ud83d\udd04 Cambio Turno",
         "break_label": "\u2615 Pausa"
