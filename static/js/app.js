@@ -37,7 +37,11 @@ async function init() {
     await buildPlaylist();
     startClock();
     startRotation();
-    startBreakChecker();
+    if (config.no_pause_info) {
+        console.log('Pause disabilitate per questo monitor (no_pause_info = true)');
+    } else {
+        startBreakChecker();
+    }
     startConfigReloader();
 }
 
@@ -834,6 +838,7 @@ function buildDepartmentCards(containerId, departments) {
 //  AUDIO
 // ===================================================================
 function playBreakSound(brk, durationMs) {
+    if (config.no_sound) return;
     stopBreakSound();
     try {
         breakAudio = new Audio(buildSoundUrl(brk));
@@ -848,6 +853,7 @@ function playBreakSound(brk, durationMs) {
 }
 
 function playShiftChangeSound(brk, durationMs) {
+    if (config.no_sound) return;
     stopBreakSound();
     try {
         breakAudio = new Audio(buildSoundUrl(brk));

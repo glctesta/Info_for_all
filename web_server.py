@@ -109,17 +109,26 @@ def get_config():
     # Configurazione rotazione specifica per il monitor
     monitors = config.get("monitors", {})
     rotation = {}
+    no_pause_info = False
+    no_sound = False
     if isinstance(monitors, dict) and monitor_name and monitor_name in monitors:
-        rotation = monitors[monitor_name].get("rotation", {})
+        mon = monitors[monitor_name]
+        rotation = mon.get("rotation", {})
+        no_pause_info = mon.get("no_pause_info", False)
+        no_sound = mon.get("no_sound", False)
     elif isinstance(monitors, dict) and monitors:
         # Fallback: primo monitor disponibile
         first = next(iter(monitors.values()))
         rotation = first.get("rotation", {})
+        no_pause_info = first.get("no_pause_info", False)
+        no_sound = first.get("no_sound", False)
 
     return jsonify({
         "rotation": rotation,
         "breaks": config.get("breaks", {}),
-        "display": config.get("display", {})
+        "display": config.get("display", {}),
+        "no_pause_info": no_pause_info,
+        "no_sound": no_sound
     })
 
 @app.route('/api/monitors')

@@ -7,6 +7,8 @@
 
     "monitors": {
         "MONITOR_KANBANPTHM": {
+            "no_pause_info": false,
+            "no_sound": false,
             "urls": [
                 {"ip": "192.168.10.72", "port": 8090},
                 {"ip": "192.168.10.72", "port": 8071, "path": "/monitor?lines=LINEA_1,LINEA_2"},
@@ -64,8 +66,6 @@
             "urls": [
                 {"ip": "192.168.10.72", "port": 8085},
                 {"ip": "192.168.10.72", "port": 8090},
-                {"ip": "192.168.10.72", "port": 8071, "path": "/monitor?lines=LINEA_1,LINEA_2"},
-				{"ip": "192.168.10.72", "port": 8071, "path": "/monitor?lines=LINEA_3,LINEA_4"},
 				{"ip": "192.168.10.72", "port": 8071},
                 {"ip": "192.168.10.72", "port": 5065}
 				
@@ -86,6 +86,19 @@
 				{"ip": "192.168.10.72", "port": 8071},
                 {"ip": "192.168.10.72", "port": 8087},
                 {"ip": "192.168.10.72", "port": 5065}
+            ],
+            "rotation": {
+                "monitor_interval_seconds": 120,
+                "slideshow_interval_seconds": 15,
+                "transition_effect": "slide",
+                "transition_duration_ms": 800
+            }
+        },
+        "MONITOR_KIOSK": {
+            "no_pause_info": true,
+            "no_sound": true,
+            "urls": [
+                {"ip": "192.168.10.75", "port": 3000}
             ],
             "rotation": {
                 "monitor_interval_seconds": 120,
