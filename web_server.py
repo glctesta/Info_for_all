@@ -275,6 +275,16 @@ def get_current_break():
     if not shift:
         return jsonify({"active": False})
 
+    # Controlla giorni disabilitati (festivi e domeniche)
+    today = datetime.now()
+    day_name = today.strftime('%A').lower()  # monday, tuesday, ..., sunday
+    disabled_days = [d.lower() for d in breaks_config.get("disabled_days", ["sunday"])]
+    holidays = breaks_config.get("holidays", [])
+    today_str = today.strftime('%Y-%m-%d')
+
+    if day_name in disabled_days or today_str in holidays:
+        return jsonify({"active": False})
+
     db = _get_db_connection()
     if not db:
         return jsonify({"active": False})

@@ -128,7 +128,19 @@
         },
         "smoking_break_label": "\ud83d\udeac Pausa Sigaretta",
         "shift_change_label": "\ud83d\udd04 Cambio Turno",
-        "break_label": "\u2615 Pausa"
+        "break_label": "\u2615 Pausa",
+        "disabled_days": ["sunday"],
+        "holidays": [
+            "2026-01-01", "2026-01-02",
+            "2026-01-24",
+            "2026-04-12", "2026-04-13",
+            "2026-05-01",
+            "2026-05-31", "2026-06-01",
+            "2026-08-15",
+            "2026-11-30",
+            "2026-12-01",
+            "2026-12-25", "2026-12-26"
+        ]
     },
 
     "display": {
